@@ -1,0 +1,6 @@
+{
+  "name": "sysDATIQ",
+  "subtitle": "Energie & Effizienz",
+  "logo": "/logo.svg",
+  "colors": { "dark": "#34383D", "muted": "#737A81", "accent": "#F28C28", "background": "#F5F6F7" }
+}

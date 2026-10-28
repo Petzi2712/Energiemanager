@@ -1,0 +1,73 @@
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sysdatiq}
+      POSTGRES_USER: ${POSTGRES_USER:-sysdatiq}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-development-only}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  mail:
+    image: axllent/mailpit:v1.27
+    ports:
+      - '127.0.0.1:${MAIL_PORT:-8025}:8025'
+    environment:
+      MP_MAX_MESSAGES: 100
+    volumes:
+      - mail_data:/data
+    command: [--database, /data/mailpit.db]
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: 8080
+      ConnectionStrings__Database: Host=db;Database=${POSTGRES_DB:-sysdatiq};Username=${POSTGRES_USER:-sysdatiq};Password=${POSTGRES_PASSWORD:-local-development-only}
+      App__BaseUrl: ${APP_BASE_URL:-http://localhost:8080}
+      App__SeedDemo: 'true'
+      Smtp__Host: mail
+      Smtp__Port: 1025
+    volumes:
+      - data_keys:/app/keys
+    depends_on:
+      db:
+        condition: service_healthy
+      mail:
+        condition: service_started
+    healthcheck:
+      test: [CMD, dotnet, Energy.Api.dll, --healthcheck]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - '127.0.0.1:${APP_PORT:-8080}:8080'
+    depends_on:
+      api:
+        condition: service_healthy
+  tests:
+    image: python:3.12-slim
+    profiles: [test]
+    working_dir: /tests
+    volumes:
+      - ./tests:/tests:ro
+    environment:
+      TEST_BASE_URL: http://web:8080
+      MAIL_BASE_URL: http://mail:8025
+    command: [python, -m, unittest, -v, test_api]
+    depends_on:
+      web:
+        condition: service_started
+volumes:
+  postgres_data:
+  data_keys:
+  mail_data:
