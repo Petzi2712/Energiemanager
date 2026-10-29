@@ -35,6 +35,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 });
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IPrivateFileStore, BlobFileStore>();
+builder.Services.AddHostedService<DocumentCleanup>();
 builder.Services.AddAntiforgery(o => { o.HeaderName = "X-CSRF-TOKEN"; o.Cookie.SameSite = SameSiteMode.Strict; });
 builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(builder.Configuration["App:DataKeyPath"] ?? "/app/keys")).SetApplicationName("sysDATIQ");
 builder.Services.AddOpenApi();
@@ -83,7 +84,7 @@ app.Use(async (c, next) =>
         { await c.SignOutAsync(); await Error(c, 401, "Die Sitzung ist abgelaufen. Bitte erneut anmelden."); return; }
         c.Items["user"] = u;
         if (u.MustChangePassword && c.Request.Path.StartsWithSegments("/api") &&
-            !new[] { "/api/auth/me", "/api/auth/password", "/api/auth/logout", "/api/auth/csrf", "/api/health" }.Contains(c.Request.Path.Value))
+            !new[] { "/api/auth/me", "/api/auth/password", "/api/auth/logout", "/api/auth/csrf", "/api/health", "/api/branding", "/api/branding/logo" }.Contains(c.Request.Path.Value))
         { await Error(c, 403, "Bitte zuerst das Startpasswort ändern."); return; }
     }
     if (c.Request.Path.StartsWithSegments("/api") && !new[] { "GET", "HEAD", "OPTIONS" }.Contains(c.Request.Method))
@@ -106,7 +107,7 @@ var api = app.MapGroup("/api").AddEndpointFilter(async (context, next) =>
     }
     return await next(context);
 });
-api.MapGet("/health", async (AppDbContext db) => await db.Database.CanConnectAsync() ? Results.Ok(new { status = "ok", phase = 2 }) : Results.StatusCode(503));
+api.MapGet("/health", async (AppDbContext db) => await db.Database.CanConnectAsync() ? Results.Ok(new { status = "ok", phase = 3, version = "0.3.0" }) : Results.StatusCode(503));
 api.MapGet("/auth/csrf", (HttpContext c, IAntiforgery a) => Results.Ok(new { token = a.GetAndStoreTokens(c).RequestToken }));
 AuthEndpoints.Map(api);
 CustomerEndpoints.Map(api);
@@ -114,6 +115,8 @@ UserEndpoints.Map(api);
 TechnicalEndpoints.Map(api);
 MeterEndpoints.Map(api);
 DocumentEndpoints.Map(api);
+WorkspaceEndpoints.Map(api);
+ConsumptionEndpoints.Map(api);
 api.MapGet("/audit", async (AppDbContext db, HttpContext c, Guid? customerId, int? limit) =>
 {
     if (!c.IsAdmin()) return Results.Forbid();

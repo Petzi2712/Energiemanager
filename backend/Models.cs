@@ -21,6 +21,7 @@ public class AppUser
     public string Role { get; set; } = Roles.User;
     public bool IsActive { get; set; } = true;
     public bool MustChangePassword { get; set; } = true;
+    public bool DarkMode { get; set; }
     public string SessionVersion { get; set; } = Guid.NewGuid().ToString();
     public int FailedLogins { get; set; }
     public DateTimeOffset? LockedUntil { get; set; }
@@ -94,6 +95,7 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options) : DbCo
     protected override void OnModelCreating(ModelBuilder b)
     {
         ConfigureTechnical(b);
+        ConfigureWorkspace(b);
         b.Entity<AppUser>().HasIndex(x => x.NormalizedEmail).IsUnique();
         b.Entity<AppUser>().Property(x => x.Email).HasMaxLength(254);
         b.Entity<AppUser>().Property(x => x.NormalizedEmail).HasMaxLength(254);

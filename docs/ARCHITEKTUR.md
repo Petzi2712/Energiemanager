@@ -1,5 +1,17 @@
 # Architektur und erster Entwicklungsabschnitt
 
+## Ergänzung: Verwaltung und Verbrauchsreihen v0.3
+
+`WorkspaceEndpoints` ergänzt datenbankgespeichertes globales Branding, ein persönliches Darkmodus-Flag am Benutzer und kunden-/standortgebundene Fahrzeuge. Die Systemadministration darf Logos, Leitspruch und Fahrzeugstammdaten ändern. Logo-PNGs werden geprüft, normalisiert und metadatenfrei als kleine Binärdaten in PostgreSQL gespeichert. Logo und Leitspruch sind für den Login öffentlich lesbar. Mutationen erfordern Sitzung und CSRF; Branding und Fahrzeuge besitzen Versionszähler.
+
+Messstellen erhalten einen Löschzeitpunkt und einen EF-Abfragefilter. Beim Löschen werden offene Zuordnungen/Installationen geschlossen und ein Audit-Eintrag mit Grund geschrieben; Ablesungen bleiben bestehen. Historische Bilanzen lesen gelöschte Unterzähler gezielt mit `IgnoreQueryFilters` nach Kunden- und Standortprüfung. Dokumente werden zuerst logisch unzugänglich gemacht und auditiert; der private Blob wird anschließend entfernt. Ein Hintergrunddienst wiederholt ausstehende Dateibereinigungen.
+
+`ConsumptionEndpoints` lädt nur relevante Ablesungen einschließlich der Nachbarn an den Zeitraumgrenzen. Differenzen werden je Geräteperiode gebildet. Schnittmengen aus Messintervallen, Standortfreigaben, Zuordnungsperioden und Diagrammbalken bestimmen die zeitanteilige Energie. Es gibt keine Extrapolation oder Differenzbildung über Gerätewechsel. UTC-Zeitdauern bewahren die Energie bei Zeitumstellungen; Kalendergrenzen entstehen in der Standortzeitzone. Unbekannte Teile bleiben null und besitzen eine gesonderte Abdeckung/Teilmenge. Direkte Unterzähler werden nur während ihrer tatsächlichen Unterordnung bilanziert; Enkel werden nicht doppelt addiert.
+
+Die Oberfläche trennt Hardwarekataster und Zählerpflege. Drag-and-drop öffnet das bestehende historisierte Zuordnungsformular; dieselben serverseitigen Regeln gelten für Formular und Drag-and-drop. SVG-Balken mit Textinformationen und ergänzender Wertetabelle benötigen keine externen Grafikdienste. Kopfzeile und Kundenauswahl sind dauerhaft beim Scrollen sichtbar.
+
+Die neue Migration ergänzt vorhandene Installationen. Ein Upgrade von einer echten 0.2-Demodatenbank wurde mit Prüfsummen aller alten Daten in neun Tabellen geprüft. Weitere Module wie Tank-/Ladevorgänge, Berichte und PDCA bleiben spätere Ausbaustufen.
+
 ## Ergänzung: technisches Kataster und Zählerverwaltung v0.2
 
 Der modulare Monolith wurde um `TechnicalEndpoints`, `MeterEndpoints`, `MeterService`, `DocumentEndpoints` und das erweiterte Dashboard ergänzt. Der Arbeitsablauf ist in [KATASTER.md](KATASTER.md) dokumentiert.
@@ -14,7 +26,7 @@ Der modulare Monolith wurde um `TechnicalEndpoints`, `MeterEndpoints`, `MeterSer
 
 `StoredDocument` verknüpft private Dateien mit Katasterknoten oder Ablesungen. `IPrivateFileStore` trennt Anwendung und Speicher. Der Blob-Adapter verwendet lokal Azurite und später bei entsprechender Konfiguration Azure Blob Storage. JPEG/PNG werden mit Magick.NET normalisiert und von Metadaten bereinigt; PDFs als Download ausgeliefert. Die neue Migration ergänzt vorhandene Daten. Technische Demodaten entstehen ausschließlich bei einer neuen Demo-Installation.
 
-Die folgenden Abschnitte beschreiben die Phase-1-Grundlage. Der aktuelle Prüfstand steht in [PRUEFBERICHT.md](PRUEFBERICHT.md). Fuhrpark, Berichtswesen, PDCA und kaufmännische Module bleiben weitere Ausbaustufen.
+Die folgenden Abschnitte beschreiben die Phase-1-Grundlage. Der aktuelle Prüfstand steht in [PRUEFBERICHT.md](PRUEFBERICHT.md). Fuhrpark-Verbrauchserfassung, Berichtswesen, PDCA und kaufmännische Module bleiben weitere Ausbaustufen.
 
 ## Technische Entscheidungen
 

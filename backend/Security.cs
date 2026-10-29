@@ -19,7 +19,7 @@ public static class Security
     public static string NewToken() => Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
     public static object UserView(AppUser u) => new
     {
-        u.Id, u.Email, u.Name, u.Role, u.IsActive, u.MustChangePassword, u.CreatedAt,
+        u.Id, u.Email, u.Name, u.Role, u.IsActive, u.MustChangePassword, u.CreatedAt, u.DarkMode,
         u.LastLoginAt, u.SessionVersion,
         customers = u.Memberships.Where(m => m.Customer.IsActive).Select(m => new { m.Customer.Id, m.Customer.Name, m.Customer.AllowUserManagement })
     };

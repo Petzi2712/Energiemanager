@@ -27,6 +27,7 @@ public class TechnicalNode
     public string SupplySystems { get; set; } = "";
     public string TimeZone { get; set; } = "Europe/Berlin";
     public string AssetType { get; set; } = "";
+    public string AssetRole { get; set; } = "Consumption";
     public string Manufacturer { get; set; } = "";
     public string Model { get; set; } = "";
     public int Quantity { get; set; } = 1;
@@ -45,6 +46,7 @@ public class TechnicalNode
 }
 public class MeasuringPoint
 {
+    public DateTimeOffset? DeletedAt { get; set; }
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid CustomerId { get; set; }
     public string Number { get; set; } = "";
@@ -144,6 +146,8 @@ public class SitePermission
 }
 public class StoredDocument
 {
+    public DateTimeOffset? DeletedAt { get; set; }
+    public bool BlobDeleted { get; set; }
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid CustomerId { get; set; }
     public Guid? NodeId { get; set; }
@@ -181,6 +185,7 @@ public partial class AppDbContext
             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null).GetHashCode(),
             v => new Dictionary<string, string>(v)));
         b.Entity<MeasuringPoint>().HasAlternateKey(x => new { x.CustomerId, x.Id });
+        b.Entity<MeasuringPoint>().HasQueryFilter(x => x.DeletedAt == null);
         b.Entity<MeasuringPoint>().HasOne<Customer>().WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
         b.Entity<TechnicalNode>().HasOne<MeasuringPoint>().WithMany().HasForeignKey(x => new { x.CustomerId, x.MeasuringPointId }).HasPrincipalKey(x => new { x.CustomerId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         b.Entity<MeasuringPoint>().HasIndex(x => new { x.CustomerId, x.Number }).IsUnique();
@@ -213,6 +218,7 @@ public partial class AppDbContext
         b.Entity<SitePermission>().HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<SitePermission>().HasOne<TechnicalNode>().WithMany().HasForeignKey(x => x.SiteId).OnDelete(DeleteBehavior.Restrict);
         b.Entity<StoredDocument>().HasOne<Customer>().WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<StoredDocument>().HasQueryFilter(x => x.DeletedAt == null);
         b.Entity<StoredDocument>().HasOne<TechnicalNode>().WithMany().HasForeignKey(x => new { x.CustomerId, x.NodeId }).HasPrincipalKey(x => new { x.CustomerId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         b.Entity<StoredDocument>().HasOne<MeterReading>().WithMany().HasForeignKey(x => x.ReadingId).OnDelete(DeleteBehavior.Restrict);
         foreach (var entity in b.Model.GetEntityTypes())

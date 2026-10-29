@@ -1,8 +1,8 @@
-# sysDATIQ – Kundenkataster und Zähleranlagenbaum (v0.2.0)
+# sysDATIQ – Anlagen, Zähler und Fuhrpark (v0.3.0)
 
 Die technische Kunden- und Zählerverwaltung aus deinem Masterprompt: eine echte Webanwendung mit React, ASP.NET Core 10 und PostgreSQL. Daten werden dauerhaft gespeichert. Der vollständige Masterprompt liegt in [docs/MASTERPROMPT.original.md](docs/MASTERPROMPT.original.md).
 
-Ansichten der geprüften Anwendung: [Kataster/Zähler Desktop](docs/screenshots/kataster-desktop.png) · [Kataster/Zähler Smartphone](docs/screenshots/kataster-smartphone.png).
+Ansichten der geprüften Anwendung: [Version 0.3 Desktop mit Darkmodus und Verbrauchsdiagramm](docs/screenshots/verbrauch-dark-desktop.png) · [Smartphone](docs/screenshots/verbrauch-dark-smartphone.png).
 
 ## Lokal starten
 
@@ -50,25 +50,32 @@ Die Übersicht zählt echte Kunden und Benutzer aus der Datenbank. Es gibt keine
 
 ## Kundenkataster und Zähleranlagenbaum
 
-Zusätzlich zur Benutzer- und Kundenverwaltung enthält Version 0.2:
+Zusätzlich zur Benutzer- und Kundenverwaltung enthält Version 0.3:
 
 - Kunden → Standorte → Gebäude → Bereiche/Anlagen, Verteilungen, Verbrauchergruppen und Einzelverbraucher.
 - Technische Standort- und Gebäudedaten mit Flächen, Nutzung, Betriebszeiten, Versorgungssystemen, Zeitzone und individuellen Zusatzfeldern.
-- Verbraucher mit Anzahl, Nenn- und Systemleistung, Jahresbetriebsstunden und Lastfaktor; elektrische Leistung und Jahresverbrauch werden ausdrücklich als **Schätzung** berechnet.
+- Hardware für Beleuchtung, Maschinen, Anlagen, Wärme, EDV/Server und Erzeugungsanlagen (BHKW, PV, Wind usw.) mit Energierolle Verbraucher/Erzeuger/beides, freien Kategorien, Energieträgern und Zusatzfeldern.
+- Verbraucher und Erzeuger mit Anzahl, Nenn- und Systemleistung, Jahresbetriebsstunden und Lastfaktor; elektrische Leistung und Jahresverbrauch werden ausdrücklich als **Schätzung** berechnet.
 - Einen getrennten, aufklappbaren Messstellenbaum mit Haupt- und Unterzählern für Strom, Wasser, Erdgas, Wärme und Kälte.
 - Messstellenstammdaten, physische Zählergeräte und getrennte Geräteperioden mit Faktor, Auflösung, Nachkommastellen und optionaler Überlaufgrenze.
 - Historisierte Zuordnungen im Anlagen-/Zählerbaum, Schutz gegen Kreise und Vermischung verschiedener Medien, Einheiten oder Messrichtungen.
 - Kundenportal mit manueller Zählerstandserfassung, Ereignissen, Kommentaren, Fotoaufnahme/Upload und Ablesehistorie.
 - Serverseitige Prüfung von Wertebereich, Genauigkeit, Auflösung, Reihenfolge, Duplikaten, Verbrauchsgrenzen und belastbaren historischen Vergleichswerten. Auffällige Werte benötigen ausdrückliche Bestätigung und Begründung.
 - Nachvollziehbare Korrekturen durch die Systemadministration und dokumentierter Zählertausch mit Alt-/Neustand. Fehlende Austauschwerte werden als unvollständig ausgewiesen.
-- Verbrauchsdifferenzen je Geräteperiode und Haupt-/Unterzählerbilanz für exakt übereinstimmende Zeiträume. Datenlücken ergeben keine scheinbar vollständige Bilanz.
+- Automatische Verbrauchsansicht für die letzten 30 Tage mit Balkendiagramm. Tage, Wochen, Monate, Jahre und Gesamtzeitraum sind wählbar; Anfang und Ende frei einstellbar. Zeitanteilige Werte und Datenlücken werden ausdrücklich gekennzeichnet. Historische Zuordnungen, Gerätewechsel und Faktoren werden berücksichtigt.
+- Haupt-/Unterzählerbilanz ohne doppelte Zählung tieferer Ebenen sowie weiterhin eine API für strikt exakte Randablesungen.
 - Private Fotos/PDF-Dokumente am Kataster und private Ablesefotos im persistenten Azurite-Speicher. Bilder werden geprüft, verkleinert und von Metadaten bereinigt.
+- Zählerlöschen mit Pflichtbegründung und Audit-Eintrag; historische Daten bleiben gespeichert. Fotos und PDF-Dateien lassen sich ebenfalls mit Protokollierung löschen.
+- Hierarchieänderung per Drag-and-drop oder Zuordnungsformular, mit Gültigkeitsdatum und serverseitiger Kreisprüfung.
+- Fuhrpark unter dem Kundenkataster: Fahrzeuge mit Standort, Kennzeichen, Hersteller, Modell, Fahrzeug-/Antriebs-/Kraftstoffart, Erstzulassung, Aufnahmekilometerstand, Fahrgestellnummer, Leistung, Batterie und Bemerkungen anlegen, ändern und löschen.
+- Logo und Login-Leitspruch unter „Mein Konto“ durch die Systemadministration ändern; kein Neubau dafür erforderlich. Gespeicherter Darkmodus pro Benutzer.
+- Fixierte Kopfzeile mit Benutzer und zentraler Kundenauswahl auf allen Seiten. Im Kundenkataster erscheinen keine Zählerlisten oder Zählerformulare.
 - Standortfreigaben pro Benutzer. Eingeschränkte Kundenadministratoren können neuen Benutzern keine weitergehenden Standortrechte geben.
 - Dashboard mit echten Standort-/Messstellenzahlen, überfälligen Ablesungen und auffälligen Werten.
 
 Ein bebilderter Arbeitsablauf und die fachlichen Grenzen stehen in [docs/KATASTER.md](docs/KATASTER.md).
 
-**Noch nicht enthalten:** Fuhrpark, Versorgerrechnungen und Tarife, umfangreiche Diagrammkonfiguration, PDF-/Excel-Berichte, PDCA, kaufmännische Vorgänge, automatische Erinnerungen, Zeitreihenimporte und KI. Diese Module bleiben weitere Ausbaustufen des Masterprompts.
+**Noch nicht enthalten:** Tank-/Ladevorgänge und Fuhrparkauswertungen, Versorgerrechnungen und Tarife, umfangreiche Diagrammkonfiguration, PDF-/Excel-Berichte, PDCA, kaufmännische Vorgänge, automatische Erinnerungen, Zeitreihenimporte und KI. Diese Module bleiben weitere Ausbaustufen des Masterprompts.
 
 ## Vorhandene Installation aktualisieren
 
@@ -76,10 +83,14 @@ Zuerst eine Datenbanksicherung erstellen (siehe unten). Im bestehenden Projektor
 
 ```sh
 git pull origin main
-docker compose up --build -d --wait
+docker compose -p sysdatiq up --build --force-recreate -d --wait
 ```
 
-Die neue Migration ergänzt die vorhandene Datenbank. Kunden, Benutzer, Passwörter und bisherige Daten bleiben erhalten. Das neue `blob_data`-Volume enthält private Dateien. **Kein `down -v` zum Aktualisieren verwenden.** Bestehende Installationen beginnen mit einem leeren technischen Kataster, das über die Oberfläche aufgebaut wird. Die umfangreiche Demo-Struktur wird ausschließlich bei einer neuen, leeren Demo-Datenbank erzeugt.
+Falls du bisher ZIP-Dateien verwendest: Die neuen Quelldateien in **denselben Projektordner** übernehmen; die bestehende `.env` behalten und anschließend denselben Compose-Befehl ausführen. In der `.env` bleiben `COMPOSE_PROJECT_NAME=sysdatiq`, `APP_PORT=8080` und die bisherigen Datenbankwerte erhalten. Der Projektname muss der bestehenden Installation entsprechen; er bestimmt die verwendeten Volumes.
+
+Danach den Browser mit `Strg+F5` neu laden. `/api/health` liefert `phase: 3` und `version: "0.3.0"`.
+
+Die neue Migration ergänzt die vorhandene Datenbank. Kunden, Benutzer, Passwörter und bisherige Daten bleiben erhalten. Das persistente `blob_data`-Volume enthält private Dateien. **Kein `down -v` zum Aktualisieren verwenden.** Bereits vorhandene Kataster- und Messdaten werden übernommen. Ein Upgrade aus Phase 1 beginnt mit einem leeren technischen Kataster, das über die Oberfläche aufgebaut wird. Die umfangreiche Demo-Struktur wird ausschließlich bei einer neuen, leeren Demo-Datenbank erzeugt.
 
 Die lokale Testversion ist ausschließlich für Entwicklung freigegeben. Containerports für Web und Mailpit sind an `127.0.0.1` gebunden. Datenbank und Backend werden im normalen Compose-Betrieb nicht direkt am Host veröffentlicht. Ein anderer Computer oder ein echtes Smartphone kann daher nicht unmittelbar zugreifen; die Smartphone-Prüfung verwendet eine entsprechend kleine Browseransicht. Für einen späteren Netzwerk- oder Produktivbetrieb sind HTTPS, individuelle Einladungen, Secret Store, Betriebs- und Datenschutzkonzept sowie eine gesonderte Sicherheitsprüfung erforderlich. Die API verweigert den Start außerhalb der Development-Umgebung.
 
@@ -101,7 +112,9 @@ Beispiel bei belegten Ports: `APP_PORT=8090`, `MAIL_PORT=8026` und `APP_BASE_URL
 
 `POSTGRES_PASSWORD` ist ein ausschließlich lokales Entwicklungskennwort. Eine Änderung in `.env` ändert kein Kennwort einer bereits initialisierten PostgreSQL-Datenbank. Bestehende Volumes enthalten weiterhin die ursprüngliche Datenbankkonfiguration.
 
-Branding: `frontend/public/branding.json` enthält Name, Untertitel, Logopfad und zentrale Farben. `frontend/public/logo.svg` ist ein austauschbares Beispielzeichen, kein vorgegebenes Firmenlogo. Nach einer Branding-Änderung die Webanwendung neu bauen: `docker compose up --build -d web`.
+Logo und Login-Leitspruch: als Systemadministrator „Mein Konto → Logo und Anmeldebildschirm“ öffnen. PNG-/JPEG-Logo bis 2 MB hochladen oder das Standardlogo wiederherstellen; den Leitspruch mit Zeilenumbrüchen speichern. Diese Werte gelten für alle Kunden und sind öffentlich am Login sichtbar. Sie liegen in PostgreSQL und bleiben bei Container-Neubauten erhalten. Unter „Mein Konto → Darstellung“ lässt sich der persönliche Darkmodus aktivieren.
+
+`frontend/public/branding.json` enthält weiterhin die Vorgaben für Name, Untertitel, Standardlogopfad und Farben. Nur Änderungen an diesen Quellvorgaben erfordern einen Web-Neubau.
 
 ## Stoppen, Protokolle und Daten sichern
 
@@ -130,7 +143,7 @@ Die API-Tests prüfen echte HTTP-Anfragen und eine echte PostgreSQL-Datenbank. D
 bash scripts/test.sh
 ```
 
-Unter Windows dafür Git Bash oder WSL verwenden. Standard-Testports: 18080 und 18025; bei Bedarf `TEST_APP_PORT` und `TEST_MAIL_PORT` setzen. Die 36 Integrationstests decken Authentifizierung, Passwortwechsel, Reset-E-Mail, einmalige Reset-Links, Kontosperre, Mandantentrennung, Rollenrechte, CSRF, Eingabevalidierung, Duplikate, Historisierung, Konflikte, OpenAPI und Sitzungswiderruf sowie Kataster, Standortrechte, Gerätewechsel, Überläufe, Korrekturhistorie, Bilanzierung und echten privaten Foto-Upload ab. Anschließend prüft das Skript Datenpersistenz nach einem API-Neustart.
+Unter Windows dafür Git Bash oder WSL verwenden. Standard-Testports: 18080 und 18025; bei Bedarf `TEST_APP_PORT` und `TEST_MAIL_PORT` setzen. Die 53 Integrationstests decken Authentifizierung, Passwortwechsel, Reset-E-Mail, einmalige Reset-Links, Kontosperre, Mandantentrennung, Rollenrechte, CSRF, Eingabevalidierung, Duplikate, Historisierung, Konflikte, OpenAPI und Sitzungswiderruf sowie Kataster, Standortrechte, Gerätewechsel, Überläufe, Korrekturhistorie, Bilanzierung und echten privaten Foto-Upload sowie Branding, Logo, Darkmodus, Fuhrpark, Löschrechte/-protokolle und zeitanteilige Verbrauchsreihen ab. Auch Zeitumstellungen, historische Standortfreigaben und die Bilanz gelöschter Unterzähler werden geprüft. Anschließend prüft das Skript Datenpersistenz nach einem API-Neustart.
 
 Für Browserprüfungen sind Node.js 24 und Chromium/Playwright zusätzlich auf dem Testrechner erforderlich:
 
@@ -141,7 +154,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Die Browserprüfung verwendet den lokalen Systemadministrator. Auf einer frischen Demo-Datenbank setzt sie dessen Passwort auf `Browser_Energie_2026!`. Auf einer bereits verwendeten Datenbank vorher `E2E_ADMIN_PASSWORD` auf dessen aktuelles Passwort setzen. Die Tests erstellen gekennzeichnete Testkunden und sind deshalb für eine separate Testinstanz gedacht. `E2E_BASE_URL` überschreibt die Zieladresse. `CHROMIUM_PATH` erlaubt einen vorhandenen Chromium-Browser. Fünf Browserabläufe prüfen Desktop und Smartphone, Kundenanlage, Kataster/Verbraucherberechnung, Messstellenanlage, Ablesung mit Foto, Korrektur, Zählertausch, Seitenbreite und die Erstanmeldung eines Kundenbenutzers.
+Die Browserprüfung verwendet den lokalen Systemadministrator. Vor dem gemeinsamen Browserlauf dessen Erstanmeldung in einer separaten Testinstanz abschließen und `E2E_ADMIN_PASSWORD` auf das gewählte Passwort setzen. Auf einer Testinstanz nach dem API-Testlauf lautet es `Test_Energie_2026!`. `E2E_ADMIN_PASSWORD` für den gemeinsamen Lauf immer ausdrücklich setzen. Die Tests erstellen gekennzeichnete Testkunden und sind deshalb für eine separate Testinstanz gedacht. `E2E_BASE_URL` überschreibt die Zieladresse. `CHROMIUM_PATH` erlaubt einen vorhandenen Chromium-Browser. Sieben Browserabläufe prüfen Desktop und Smartphone, Kundenanlage, Kataster/Verbraucherberechnung, Messstellenanlage, Ablesung mit Foto, Korrektur, Zählertausch, Seitenbreite und die Erstanmeldung eines Kundenbenutzers. Die neuen Abläufe prüfen außerdem Branding am Login, Darkmodus nach Neuladen, Hardware/Erzeuger, Fuhrpark, Bild- und Zählerlöschen, automatische Balken, Drag-and-drop und die fixierte Kopfzeile.
 
 ## Entwicklung ohne kompletten Container-Neubau
 

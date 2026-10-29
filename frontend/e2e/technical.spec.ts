@@ -29,7 +29,7 @@ for (const width of [1440, 390]) {
       .getByRole('navigation')
       .getByRole('button', { name: 'Kundenkataster', exact: true })
       .click();
-    const customer = page.getByLabel('Kunde für Kataster');
+    const customer = page.getByLabel('Kundenauswahl');
     if (await customer.count())
       await customer.selectOption({ label: 'Nordwerk Metalltechnik GmbH' });
     const suffix = `${width}-${Date.now()}`;
@@ -81,9 +81,10 @@ for (const width of [1440, 390]) {
     await expect(
       page.getByText('7.200 kWh/Jahr', { exact: true }),
     ).toBeVisible();
-    await page
-      .getByRole('button', { name: '+ Messstelle zuordnen', exact: true })
-      .click();
+    if (width < 760) await page.getByRole('button', { name: 'Menü öffnen' }).click();
+    await page.getByRole('navigation').getByRole('button', { name: 'Zähleranlagenbaum', exact: true }).click();
+    await page.getByRole('button', { name: '+ Messstelle anlegen', exact: true }).click();
+    await page.getByLabel('Zuordnung im Anlagenkataster', { exact: true }).selectOption({ label: 'Hardware / Verbraucher / Erzeuger · UI Beleuchtung ' + suffix });
     await page
       .getByLabel('Messstellennummer *', { exact: true })
       .fill('UI-M-' + suffix);

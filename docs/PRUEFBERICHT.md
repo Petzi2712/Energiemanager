@@ -1,36 +1,34 @@
-# Prüfbericht – Kundenkataster und Zähleranlagenbaum v0.2.0
+# Prüfbericht – Anlagen, Zähler und Fuhrpark v0.3.0
 
-Geprüft am 29.10.2026 mit ausschließlich synthetischen Testdaten. Der frühere Stand bleibt in [PRUEFBERICHT-phase1.md](PRUEFBERICHT-phase1.md) erhalten.
+Die Prüfungen verwenden ausschließlich synthetische Daten. Der vorherige Prüfstand bleibt in [PRUEFBERICHT-v0.2.md](PRUEFBERICHT-v0.2.md) erhalten.
 
 | Prüfung | Ergebnis |
 | --- | --- |
 | Backend Release-Build und Publish (.NET 10.0.403) | Erfolgreich, keine Warnungen oder Fehler |
 | Frontend TypeScript-/Vite-Produktionsbuild | Erfolgreich |
-| Web-Container | Erfolgreich gebaut; HTML, Branding, Anwendungsskript und Foto-Vorschau-CSP per HTTP geprüft |
-| Neue PostgreSQL-Datenbank mit beiden Migrationen | Erfolgreich initialisiert, reproduzierbare technische Demo-Daten |
-| Bisherige API-Integrationstests | **16 ausgeführt, 16 bestanden** |
-| Neue fachliche API-Integrationstests | **20 ausgeführt, 20 bestanden** |
-| Gemeinsamer API-Lauf auf frischer Datenbank | **36 ausgeführt, 36 bestanden**, keine übersprungenen Tests |
-| Gemeinsame Browserprüfung | **5 ausgeführt, 5 bestanden**, Desktop und Smartphone |
-| Upgrade einer Kopie der Phase-1-Datenbank | Erfolgreich; sämtliche Kundenstammdaten sowie Benutzer-, Rollen- und Aktivierungsdaten unverändert |
-| Demo-Verhalten beim Upgrade | Keine technischen Demo-Einträge in vorhandene Daten eingefügt |
-| Azurite mit echtem Blob-Zugriff | Foto gespeichert, JPEG abrufbar, Metadaten entfernt, anderer Mandant abgewiesen |
-| Dateipersistenz | Foto nach Azurite-Neustart anhand SHA256 unverändert abrufbar |
-| npm-/NuGet-Prüfungen inkl. transitiver App-Pakete | Keine bekannten Schwachstellen gemeldet |
-| Compose-Konfiguration und Shell-Testskript | Strukturell bzw. syntaktisch gültig |
+| Web-Containerimage | Erfolgreich gebaut; HTML, Produktionsskript v0.3.0, Branding und CSP per HTTP geprüft |
+| Gemeinsamer API-Lauf auf frischer PostgreSQL-Datenbank | **53 ausgeführt, 53 bestanden**, keine übersprungenen Tests |
+| Gemeinsame Browserprüfung | **7 ausgeführt, 7 bestanden**, 1440 und 390 Pixel breite Ansichten |
+| Update einer mit echter Version 0.2 initialisierten Datenbank | Erfolgreich; alle alten Spalten und Zeilenzahlen in neun Tabellen per Prüfsumme identisch |
+| Neue Schemaergänzungen | Bestehende Hardware erhält die Verbrauchsrolle; Branding wird initialisiert; drei Migrationen angewendet |
+| Foto- und Logo-Uploads | Tatsächliche Decodierung, Normalisierung, privater Fotodownload bzw. öffentliches Anmeldelogo geprüft |
+| npm-Laufzeitpakete und NuGet-Pakete inkl. transitiver Abhängigkeiten | Keine bekannten Schwachstellen gemeldet |
+| Compose-Konfiguration, Shellsyntax und Patch-Whitespace | Erfolgreich geprüft |
 
-Die neuen API-Tests prüfen Demo-Struktur und die 7.200-kWh-Schätzung für 24 × 150-W-Leuchten, Katasteranlage und Änderungskonflikte, mandantenfremde Elternknoten, Verbrauchsdifferenzen, Duplikate, fallende Stände und Genauigkeit, Warnungen mit Bestätigung, explizite Überläufe, rückdatierte Eingaben mit Folgeablesung, Revisionen, Gerätewechsel und periodenbezogene Faktoren, fehlende Austauschwerte, Haupt-/Unterzählerbilanz ohne Doppelzählung, gemischte Medien, Kreiszuordnungen, historisierte Standortwechsel, Standortrechte, Leserrechte, Deaktivierung mit aktiven Untereinträgen, privaten Foto-Upload, Metadatenbereinigung, eingeschränkte Delegation durch Kundenadministratoren und reale Dashboard-Zahlen.
+Die 17 neuen Integrationstests prüfen öffentliches Branding und administrative Schreibrechte, Leitspruchvalidierung und Änderungskonflikte, echten Logo-Upload und Rücksetzung, benutzerbezogene Darkmodus-Persistenz, Fuhrparkanlage/-änderung/-löschung mit Fremdstandort- und Rechteprüfung, Versionskonflikte und Löschprotokolle, Zählerlöschung mit Erhalt der historischen Ablesungen, Löschschutz bei Unterzählern, Dokumentlöschung und sofortigen Entzug des Downloads, automatische 30-Tage-Vorgaben, fehlende Messintervalle ohne Extrapolation, zeitanteilige Verteilung und Gerätefaktoren, Erhalt der Energiesumme über die Gruppierungen, direkte Unterzähler ohne Enkel-Doppelzählung, Gerätewechsel mit vollständigen und fehlenden Austauschständen, 23-/25-Stunden-Tage, zeitlich gültige Hierarchieänderungen, ungültige Zeiträume, Erzeugungsanlagen, Dashboard-Kundenauswahl, historische Standortfreigaben einschließlich Schutz der Nachbarablesungen sowie die frühere Bilanz eines inzwischen gelöschten Unterzählers.
 
-Die Browserabläufe umfassen die bisherigen Kunden- und Erstanmeldungsabläufe und zusätzlich auf Desktop (1440 × 1000) und Smartphone (390 × 844): Standort, Gebäude und Verbraucher anlegen; Leistung und geschätzten Jahresbedarf prüfen; Messstelle mit Anfangsstand und Faktor anlegen; Zählerstand mit Foto speichern; Verbrauch anzeigen; einen Wert mit Begründung korrigieren; Zählertausch mit separatem Neuanfang erfassen. JavaScript-Seitenfehler und horizontale Überbreite werden ebenfalls geprüft.
+Die sieben Browserabläufe prüfen die bisherigen Kunden-/Erstanmeldungs- und technischen Abläufe sowie die neuen Funktionen auf Desktop und Smartphoneansicht: Darkmodus aktivieren und nach Neuladen prüfen, Leitspruch ändern und am Login anzeigen, Logo hochladen und Standardlogo wiederherstellen, Hardware als PV-Erzeuger erfassen, technische Fotos hochladen und löschen, Fahrzeug anlegen und löschen, automatische Diagramme und Zeitgruppierung, Kopfzeile und Kundenauswahl beim Scrollen, echte native Drag-and-drop-Zuordnung und protokolliertes Zählerlöschen. Zusätzlich werden JavaScript-Seitenfehler und horizontale Überbreite geprüft.
 
-Während der Entwicklung wurden Formularbeschriftungen, die Auswahlfelder eindeutig zuordnen, die Aktualisierung nach Gerätewechseln und die Vererbung eingeschränkter Standortrechte gezielt geprüft. Ein anfangs fehlgeschlagener Bilanztest verwendete einen nicht URL-kodierten UTC-Offset; mit korrekt kodierten Zeitstempeln besteht er. Die Upgrade-Prüfung wurde mit dem aktuellen Release-Build ausgeführt; ein veralteter Debug-Build wurde von EF Core wegen fehlender Migration zu Recht abgewiesen. Die Modellprüfung wurde nicht deaktiviert.
+Ein anfänglicher Browserfehler bei der verzögerten Darkmodus-Rückmeldung wurde durch unmittelbare Umschaltung mit Rücksetzung bei Speicherfehler behoben. Die Logoauswahl bleibt beim Speichern anderer Branding-Einstellungen erhalten. Die anschließenden gemeinsamen Browser- und API-Läufe bestanden vollständig.
+
+Die Upgradeprüfung verwendete eine separat mit dem unveränderten Commit `4156ec7` aufgebaute und befüllte 0.2-Datenbank. Danach wurde die neue API mit automatischer Migration gestartet. Prüfsummen der alten Inhalte von Kunden, Benutzern, Knoten, Messstellen, Ablesungen, Zuordnungen, Geräten, Installationen und Dokumenten blieben identisch. Die neue Hardware-Rolle wurde korrekt ergänzt. Es wurden keine technischen Demo-Daten in den Bestand eingefügt.
+
+Ansichten: [Desktop](screenshots/verbrauch-dark-desktop.png) · [Smartphone](screenshots/verbrauch-dark-smartphone.png).
 
 ## Prüfgrenzen
 
-Die fachlichen Tests liefen hier mit nativer ASP.NET-Core-/Vite-Ausführung, PostgreSQL und Mailpit in Docker sowie dem offiziellen lokalen Azurite-Emulator. Der Benutzer hat den funktionierenden Docker-Betrieb von Phase 1 bestätigt. Diese Angabe ersetzt keine Prüfung des neuen vollständigen Compose-Stacks in dieser Cloud.
+Die fachlichen Prüfungen liefen mit nativer ASP.NET-Core-/Vite-Ausführung, PostgreSQL 17 und Mailpit in Docker sowie dem offiziellen Azurite-Emulator 3.35.0 mit echtem Blob-Zugriff.
 
-Der komplette Backend-/Azurite-Containerbuild bleibt durch den bereits dokumentierten Cloud-Netzwerkfilter für den MCR-Blobhost eingeschränkt. Das enthaltene Testskript prüft auf einem Rechner mit Registry-Zugriff den vollständigen Compose-Betrieb mit 36 API-Tests in einem eigenen Testprojekt. Neue Basisimages wurden nicht über unzulässige Netzwerkwege geladen. TLS-, Signatur- und Paketprüfungen wurden nicht abgeschaltet.
+Der vollständige Backend-Containerbetrieb konnte in dieser Cloud nicht erneut geprüft werden: Der erneute Abruf von `mcr.microsoft.com/dotnet/aspnet:10.0.14` scheiterte beim Image-Download mit `Forbidden` am Cloud-Netzwerkfilter. Diese Einschränkung betrifft die Testumgebung; sie belegt keinen Fehler des lokalen Docker-Rechners. Die enthaltenen Dockerdateien und der gesonderte Compose-Testlauf sind für einen Rechner mit Registry-Zugriff vorgesehen. Es wurden keine Netzwerk- oder TLS-Prüfungen umgangen.
 
-Nicht geprüft: Betrieb auf dem konkreten Benutzerrechner nach diesem Update, physische Smartphone-Hardware, Windows/macOS/ARM, Azure-Deployment, Produktionssicherheit, Lasttests und noch nicht implementierte Module wie Fuhrpark, Berichte, PDCA, kaufmännische Vorgänge und KI. Es findet keine automatische Zählerstanderkennung statt.
-
-Die wiederverwendbaren Cloud-Felder `install_script` und `start_skill` wurden einschließlich des privaten lokalen Dateispeichers als Entwurf aktualisiert und die entsprechenden Installations-/Startschritte ausgeführt. Für die Übernahme in eine neue Cloud-Version müssen die Änderungen in den Umgebungseinstellungen geprüft, gespeichert und die Umgebung veröffentlicht werden. Der Entwurf führt diese Veröffentlichung nicht selbst aus.
+Nicht geprüft sind der konkrete Windows-/Docker-Rechner des Benutzers nach diesem Update, physische Smartphones, ARM, Azure-Deployment, Lasttests und Produktivbetrieb. Fuhrpark-Tank-/Ladedaten, Berichte, Tarife, PDCA und KI bleiben weitere Ausbaustufen. Zeitanteilige Diagrammwerte sind keine gemessenen Tageslastgänge; fehlende Rand-/Austauschstände bleiben Datenlücken.

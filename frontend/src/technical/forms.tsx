@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { api } from '../api';
-import { Dialog, ErrorBox, Field } from '../ui';
+import { useState } from "react";
+import { api } from "../api";
+import { Dialog, ErrorBox, Field } from "../ui";
 import {
   emptyNode,
   kinds,
@@ -11,7 +11,7 @@ import {
   type Point,
   type PointView,
   type Tree,
-} from './types';
+} from "./types";
 
 export function NodeForm({
   customerId,
@@ -35,10 +35,10 @@ export function NodeForm({
       ? {
           parentId: parent?.id || null,
           kind: parent
-            ? parent.kind === 'Site'
-              ? 'Building'
-              : 'Area'
-            : 'Site',
+            ? parent.kind === "Site"
+              ? "Building"
+              : "Area"
+            : "Site",
         }
       : {}),
   });
@@ -51,8 +51,8 @@ export function NodeForm({
     <Field label={label}>
       <input
         required={required}
-        maxLength={key === 'name' ? 200 : key === 'number' ? 60 : 1000}
-        value={String(form[key] ?? '')}
+        maxLength={key === "name" ? 200 : key === "number" ? 60 : 1000}
+        value={String(form[key] ?? "")}
         onChange={(e) => setForm({ ...form, [key]: e.target.value })}
       />
     </Field>
@@ -68,14 +68,14 @@ export function NodeForm({
         type="number"
         min="0"
         max={max}
-        step={key === 'quantity' || key === 'year' ? 1 : 'any'}
+        step={key === "quantity" || key === "year" ? 1 : "any"}
         required={!nullable}
-        value={form[key] == null ? '' : Number(form[key])}
+        value={form[key] == null ? "" : Number(form[key])}
         onChange={(e) =>
           setForm({
             ...form,
             [key]:
-              e.target.value === '' && nullable ? null : Number(e.target.value),
+              e.target.value === "" && nullable ? null : Number(e.target.value),
           })
         }
       />
@@ -84,7 +84,7 @@ export function NodeForm({
   return (
     <Dialog
       title={
-        node ? 'Katastereintrag bearbeiten' : `${kinds[form.kind]} anlegen`
+        node ? "Katastereintrag bearbeiten" : `${kinds[form.kind]} anlegen`
       }
       onClose={onClose}
     >
@@ -99,14 +99,14 @@ export function NodeForm({
             if (
               !customFields ||
               Array.isArray(customFields) ||
-              Object.values(customFields).some((v) => typeof v !== 'string')
+              Object.values(customFields).some((v) => typeof v !== "string")
             )
               throw new Error(
-                'Zusatzfelder als JSON-Objekt mit Textwerten angeben.',
+                "Zusatzfelder als JSON-Objekt mit Textwerten angeben.",
               );
             const result = await api<{ node: Node }>(
-              `/technical/${customerId}/nodes${node ? `/${node.id}` : ''}`,
-              node ? 'PUT' : 'POST',
+              `/technical/${customerId}/nodes${node ? `/${node.id}` : ""}`,
+              node ? "PUT" : "POST",
               { ...form, customFields },
             );
             await onSaved(result.node.id);
@@ -120,7 +120,7 @@ export function NodeForm({
         <div className="form-grid">
           <Field label="Strukturtyp">
             <select
-              disabled={!!node || !parent || parent.kind === 'Site'}
+              disabled={!!node || !parent || parent.kind === "Site"}
               value={form.kind}
               onChange={(e) => setForm({ ...form, kind: e.target.value })}
             >
@@ -129,10 +129,10 @@ export function NodeForm({
                   node
                     ? k === node.kind
                     : !parent
-                      ? k === 'Site'
-                      : parent.kind === 'Site'
-                        ? k === 'Building'
-                        : !['Site', 'Building'].includes(k),
+                      ? k === "Site"
+                      : parent.kind === "Site"
+                        ? k === "Building"
+                        : !["Site", "Building"].includes(k),
                 )
                 .map(([k, v]) => (
                   <option key={k} value={k}>
@@ -141,74 +141,99 @@ export function NodeForm({
                 ))}
             </select>
           </Field>
-          {text('number', 'Nummer *', true)}
-          {text('name', 'Bezeichnung *', true)}
-          {text('usage', 'Nutzung / Standorttyp')}
-          {form.kind === 'Site' && (
+          {text("number", "Nummer *", true)}
+          {text("name", "Bezeichnung *", true)}
+          {text("usage", "Nutzung / Standorttyp")}
+          {form.kind === "Site" && (
             <>
-              {text('address', 'Adresse')}
-              {text('contact', 'Ansprechpartner')}
-              {text('timeZone', 'Standortzeitzone (IANA)')}
-              {text('workingDays', 'Arbeitstage')}
-              {text('shiftModel', 'Schichtmodell')}
-              {text('productionHours', 'Produktionszeiten')}
-              {text('energySources', 'Energieträger')}
-              {text('supplySystems', 'Versorgungssysteme')}
+              {text("address", "Adresse")}
+              {text("contact", "Ansprechpartner")}
+              {text("timeZone", "Standortzeitzone (IANA)")}
+              {text("workingDays", "Arbeitstage")}
+              {text("shiftModel", "Schichtmodell")}
+              {text("productionHours", "Produktionszeiten")}
+              {text("energySources", "Energieträger")}
+              {text("supplySystems", "Versorgungssysteme")}
             </>
           )}
-          {['Site', 'Building'].includes(form.kind) && (
+          {["Site", "Building"].includes(form.kind) && (
             <>
-              {numeric('usableArea', 'Nutzfläche (m²)', true)}
-              {numeric('heatedArea', 'Beheizte Fläche (m²)', true)}
-              {numeric('year', 'Baujahr', true, 2200)}
-              {text('heating', 'Heizungsart')}
-              {text('cooling', 'Kühlungsart')}
-              {text('lighting', 'Beleuchtungstechnik')}
+              {numeric("usableArea", "Nutzfläche (m²)", true)}
+              {numeric("heatedArea", "Beheizte Fläche (m²)", true)}
+              {numeric("year", "Baujahr", true, 2200)}
+              {text("heating", "Heizungsart")}
+              {text("cooling", "Kühlungsart")}
+              {text("lighting", "Beleuchtungstechnik")}
             </>
           )}
-          {text('operatingHours', 'Betriebs-/Nutzungszeiten')}
-          {form.kind === 'ConsumerAsset' && (
+          {text("operatingHours", "Betriebs-/Nutzungszeiten")}
+          {form.kind === "ConsumerAsset" && (
             <>
-              {text('assetType', 'Verbrauchertyp (frei ergänzbar)')}
-              {text('manufacturer', 'Hersteller')}
-              {text('model', 'Modell')}
-              {numeric('year', 'Baujahr', true, 2200)}
-              {numeric('quantity', 'Anzahl', false, 1000000)}
+              <Field label="Hardwarekategorie">
+                <input
+                  list="hardware-types"
+                  maxLength={1000}
+                  value={form.assetType}
+                  onChange={(e) =>
+                    setForm({ ...form, assetType: e.target.value })
+                  }
+                />
+              </Field>
+              <datalist id="hardware-types">
+                {[
+                  "Beleuchtung",
+                  "Maschinen",
+                  "Anlagentechnik",
+                  "Wärmeanlagen",
+                  "Lüftung / Klima",
+                  "Kälteanlagen",
+                  "Druckluft",
+                  "EDV-Technik",
+                  "Serverraum",
+                  "BHKW",
+                  "Photovoltaik",
+                  "Windanlage",
+                  "Batteriespeicher",
+                  "Sonstige Verbraucher",
+                  "Sonstige Erzeugungsanlagen",
+                ].map((v) => (
+                  <option key={v} value={v} />
+                ))}
+              </datalist>
+              <Field label="Energierolle">
+                <select
+                  value={form.assetRole}
+                  onChange={(e) =>
+                    setForm({ ...form, assetRole: e.target.value })
+                  }
+                >
+                  <option value="Consumption">Verbraucher</option>
+                  <option value="Generation">Erzeuger</option>
+                  <option value="Both">Verbraucher und Erzeuger</option>
+                </select>
+              </Field>
+              {text("energySources", "Energieträger / Energieformen")}
+              {text("manufacturer", "Hersteller")}
+              {text("model", "Modell")}
+              {numeric("year", "Baujahr", true, 2200)}
+              {numeric("quantity", "Anzahl", false, 1000000)}
               {numeric(
-                'ratedPowerW',
-                'Nenn-/Leuchtmittelleistung je Stück (W)',
+                "ratedPowerW",
+                "Nenn-/Leuchtmittelleistung je Stück (W)",
               )}
               {numeric(
-                'systemPowerW',
-                'Elektrische Systemleistung je Stück inkl. Verluste (W)',
+                "systemPowerW",
+                "Elektrische Systemleistung je Stück inkl. Verluste (W)",
                 true,
               )}
               {numeric(
-                'annualHours',
-                'Betriebsstunden pro Jahr (h)',
+                "annualHours",
+                "Betriebsstunden pro Jahr (h)",
                 false,
                 8784,
               )}
-              {numeric('operatingDays', 'Betriebstage pro Jahr', false, 366)}
-              {numeric('loadFactor', 'Lastfaktor (0 bis 1)', false, 1)}
-              <Field label="Zugeordnete Messstelle">
-                <select
-                  value={form.measuringPointId || ''}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      measuringPointId: e.target.value || null,
-                    })
-                  }
-                >
-                  <option value="">Keine Zuordnung</option>
-                  {tree.points.map((p) => (
-                    <option key={p.point.id} value={p.point.id}>
-                      {p.point.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              {numeric("operatingDays", "Betriebstage pro Jahr", false, 366)}
+              {numeric("loadFactor", "Lastfaktor (0 bis 1)", false, 1)}
             </>
           )}
           <label className="field full">
@@ -244,7 +269,7 @@ export function NodeForm({
             Abbrechen
           </button>
           <button className="primary" disabled={busy}>
-            {busy ? 'Speichern …' : 'Katastereintrag speichern'}
+            {busy ? "Speichern …" : "Katastereintrag speichern"}
           </button>
         </div>
       </form>
@@ -267,40 +292,40 @@ export function PointForm({
   onSaved: (id: string) => Promise<void>;
 }) {
   const [form, setForm] = useState({
-    number: view?.point.number || '',
-    name: view?.point.name || '',
-    nodeId: view?.assignment.nodeId || nodeId || tree.nodes[0]?.node.id || '',
+    number: view?.point.number || "",
+    name: view?.point.name || "",
+    nodeId: view?.assignment.nodeId || nodeId || tree.nodes[0]?.node.id || "",
     parentPointId: view?.assignment.parentPointId || null,
     at: localInput(),
-    medium: view?.point.medium || 'Electricity',
-    unit: view?.point.unit || 'kWh',
-    quantity: view?.point.quantity || 'Energie',
-    direction: view?.point.direction || 'Import',
+    medium: view?.point.medium || "Electricity",
+    unit: view?.point.unit || "kWh",
+    quantity: view?.point.quantity || "Energie",
+    direction: view?.point.direction || "Import",
     readingIntervalDays: view?.point.readingIntervalDays || 30,
     maxDailyConsumption: view?.point.maxDailyConsumption ?? null,
-    supplier: view?.point.supplier || '',
-    tariffReference: view?.point.tariffReference || '',
-    notes: view?.point.notes || '',
+    supplier: view?.point.supplier || "",
+    tariffReference: view?.point.tariffReference || "",
+    notes: view?.point.notes || "",
     isActive: view?.point.isActive ?? true,
     version: view?.point.version || 1,
   });
   const [device, setDevice] = useState({
-    number: view?.device.number || '',
-    manufacturer: view?.device.manufacturer || '',
-    model: view?.device.model || '',
-    meterType: view?.device.meterType || '',
+    number: view?.device.number || "",
+    manufacturer: view?.device.manufacturer || "",
+    model: view?.device.model || "",
+    meterType: view?.device.meterType || "",
     factor: view?.installation.factor ?? 1,
     decimals: view?.installation.decimals ?? 0,
     resolution: view?.installation.resolution ?? 1,
     registerLimit: view?.installation.registerLimit ?? null,
   });
-  const [initial, setInitial] = useState('');
+  const [initial, setInitial] = useState("");
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
   return (
     <Dialog
       title={
-        view ? 'Messstelle bearbeiten' : 'Messstelle mit Zählergerät anlegen'
+        view ? "Messstelle bearbeiten" : "Messstelle mit Zählergerät anlegen"
       }
       onClose={onClose}
     >
@@ -313,12 +338,12 @@ export function PointForm({
           try {
             const p = await api<Point>(
               `/meters/${view ? view.point.id : `?customerId=${customerId}`}`,
-              view ? 'PUT' : 'POST',
+              view ? "PUT" : "POST",
               {
                 ...form,
                 at: new Date(form.at).toISOString(),
                 device,
-                initialValue: initial === '' ? null : Number(initial),
+                initialValue: initial === "" ? null : Number(initial),
               },
             );
             await onSaved(p.id);
@@ -371,7 +396,7 @@ export function PointForm({
                   medium: e.target.value,
                   unit: units[e.target.value][0],
                   quantity:
-                    units[e.target.value][0] === 'm³' ? 'Volumen' : 'Energie',
+                    units[e.target.value][0] === "m³" ? "Volumen" : "Energie",
                 })
               }
             >
@@ -390,7 +415,7 @@ export function PointForm({
                 setForm({
                   ...form,
                   unit: e.target.value,
-                  quantity: e.target.value === 'm³' ? 'Volumen' : 'Energie',
+                  quantity: e.target.value === "m³" ? "Volumen" : "Energie",
                 })
               }
             >
@@ -412,7 +437,7 @@ export function PointForm({
           <Field label="Übergeordnete Messstelle">
             <select
               disabled={!!view}
-              value={form.parentPointId || ''}
+              value={form.parentPointId || ""}
               onChange={(e) =>
                 setForm({ ...form, parentPointId: e.target.value || null })
               }
@@ -460,12 +485,12 @@ export function PointForm({
               type="number"
               min="0"
               step="any"
-              value={form.maxDailyConsumption ?? ''}
+              value={form.maxDailyConsumption ?? ""}
               onChange={(e) =>
                 setForm({
                   ...form,
                   maxDailyConsumption:
-                    e.target.value === '' ? null : Number(e.target.value),
+                    e.target.value === "" ? null : Number(e.target.value),
                 })
               }
             />
@@ -539,7 +564,7 @@ export function PointForm({
             Abbrechen
           </button>
           <button className="primary" disabled={busy}>
-            {busy ? 'Speichern …' : 'Messstelle speichern'}
+            {busy ? "Speichern …" : "Messstelle speichern"}
           </button>
         </div>
       </form>
@@ -565,48 +590,48 @@ export function DeviceFields({
 }) {
   return (
     <div className="form-grid">
-      {(['number', 'manufacturer', 'model', 'meterType'] as const).map(
+      {(["number", "manufacturer", "model", "meterType"] as const).map(
         (key, index) => (
           <Field
             key={key}
             label={
-              ['Zählernummer *', 'Hersteller', 'Modell', 'Zählertyp'][index]
+              ["Zählernummer *", "Hersteller", "Modell", "Zählertyp"][index]
             }
           >
             <input
-              required={key === 'number'}
-              maxLength={key === 'number' ? 100 : 200}
+              required={key === "number"}
+              maxLength={key === "number" ? 100 : 200}
               value={value[key]}
               onChange={(e) => onChange({ ...value, [key]: e.target.value })}
             />
           </Field>
         ),
       )}
-      {(['factor', 'decimals', 'resolution', 'registerLimit'] as const).map(
+      {(["factor", "decimals", "resolution", "registerLimit"] as const).map(
         (key, index) => (
           <Field
             key={key}
             label={
               [
-                'Zählerfaktor',
-                'Nachkommastellen (0–6)',
-                'Zählerauflösung',
-                'Zählwerksgrenze / Überlaufmodulus (optional)',
+                "Zählerfaktor",
+                "Nachkommastellen (0–6)",
+                "Zählerauflösung",
+                "Zählwerksgrenze / Überlaufmodulus (optional)",
               ][index]
             }
           >
             <input
               type="number"
-              required={key !== 'registerLimit'}
-              min={key === 'decimals' ? 0 : 0.000001}
-              max={key === 'decimals' ? 6 : undefined}
-              step={key === 'decimals' ? 1 : 'any'}
-              value={value[key] ?? ''}
+              required={key !== "registerLimit"}
+              min={key === "decimals" ? 0 : 0.000001}
+              max={key === "decimals" ? 6 : undefined}
+              step={key === "decimals" ? 1 : "any"}
+              value={value[key] ?? ""}
               onChange={(e) =>
                 onChange({
                   ...value,
                   [key]:
-                    e.target.value === '' && key === 'registerLimit'
+                    e.target.value === "" && key === "registerLimit"
                       ? null
                       : Number(e.target.value),
                 })
@@ -623,14 +648,20 @@ export function AssignmentForm({
   tree,
   onClose,
   onSaved,
+  target,
 }: {
   view: PointView;
+  target?: { nodeId: string; parentPointId: string | null };
   tree: Tree;
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
-  const [nodeId, setNodeId] = useState(view.assignment.nodeId),
-    [parent, setParent] = useState(view.assignment.parentPointId || ''),
+  const [nodeId, setNodeId] = useState(
+      target?.nodeId || view.assignment.nodeId,
+    ),
+    [parent, setParent] = useState(
+      target ? target.parentPointId || "" : view.assignment.parentPointId || "",
+    ),
     [at, setAt] = useState(localInput()),
     [error, setError] = useState<unknown>(),
     [busy, setBusy] = useState(false);
@@ -647,7 +678,7 @@ export function AssignmentForm({
           setBusy(true);
           setError(undefined);
           try {
-            await api(`/meters/${view.point.id}/assignment`, 'POST', {
+            await api(`/meters/${view.point.id}/assignment`, "POST", {
               nodeId,
               parentPointId: parent || null,
               at: new Date(at).toISOString(),

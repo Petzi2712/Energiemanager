@@ -9,6 +9,20 @@ public static class MeterEndpoints
     public static void Map(RouteGroupBuilder api)
     {
         var group = api.MapGroup("/meters").RequireAuthorization();
+        group.MapDelete("/{id:guid}", async (Guid id, [Microsoft.AspNetCore.Mvc.FromBody] DeleteInput input, AppDbContext db, HttpContext c) =>
+        {
+            Admin(c); await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            var p = await Point(db, c, id); WorkspaceEndpoints.ValidateDelete(input, p.Version);
+            Require(!await db.Assignments.AnyAsync(x => x.ParentPointId == id && x.ValidTo == null && db.Points.Any(p => p.Id == x.PointId)), "Zuerst Unterzähler umhängen oder löschen.");
+            var at = DateTimeOffset.UtcNow;
+            Require(!await db.Readings.AnyAsync(x => x.PointId == id && x.At > at), "Vor dem Löschen zukünftige Ablesezeitpunkte korrigieren.");
+            p.DeletedAt = at; p.IsActive = false; p.Version++;
+            foreach (var a in await db.Assignments.Where(x => x.PointId == id && x.ValidTo == null).ToListAsync()) a.ValidTo = at;
+            foreach (var i in await db.Installations.Where(x => x.PointId == id && x.ValidTo == null).ToListAsync()) i.ValidTo = at;
+            foreach (var n in await db.Nodes.Where(x => x.MeasuringPointId == id).ToListAsync()) { n.MeasuringPointId = null; n.Version++; }
+            Security.Audit(db, c, "Messstelle.Gelöscht", id.ToString(), p.CustomerId, JsonSerializer.Serialize(new { input.Reason, point = p, readings = await db.Readings.CountAsync(x => x.PointId == id) }));
+            await db.SaveChangesAsync(); await tx.CommitAsync(); return Results.Ok(new { message = "Zähler gelöscht. Historie und Löschgrund sind protokolliert." });
+        });
         group.MapPost("/", async (Guid customerId, PointInput input, AppDbContext db, HttpContext c) =>
         {
             Admin(c); await Sites(db, c, customerId); Validate(input);
@@ -129,7 +143,7 @@ public static class MeterEndpoints
             complete &= !await db.Assignments.AnyAsync(x => x.CustomerId == p.CustomerId && (x.ParentPointId == id || x.PointId == id) && x.ValidFrom > from && x.ValidFrom < to);
             foreach (var a in children.Where(x => sites.Contains(x.SiteId)))
             {
-                var child = await db.Points.SingleAsync(x => x.Id == a.PointId); var value = await Consumption(db, child.Id, from, to);
+                var child = await db.Points.IgnoreQueryFilters().SingleAsync(x => x.Id == a.PointId); var value = await Consumption(db, child.Id, from, to);
                 if (value == null || child.Unit != p.Unit || child.Medium != p.Medium || child.Direction != p.Direction) complete = false;
                 sum += value ?? 0; rows.Add(new { pointId = child.Id, child.Name, consumption = value, child.Unit });
             }

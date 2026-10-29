@@ -4,7 +4,7 @@ export type Customer = {
   contractStart: string | null; isActive: boolean; allowUserManagement: boolean; version: number;
 };
 export type Member = { id: string; name: string; allowUserManagement: boolean };
-export type Session = { id: string; name: string; email: string; role: string; mustChangePassword: boolean; customers: Member[] };
+export type Session = { id: string; name: string; email: string; role: string; mustChangePassword: boolean; darkMode: boolean; customers: Member[] };
 export type User = { id: string; name: string; email: string; role: string; isActive: boolean; mustChangePassword: boolean; sessionVersion: string; customerIds: string[]; customers: string[]; lastLoginAt: string | null };
 export type Audit = { id: number; at: string; actor: string; action: string; target: string; result: string; details: string; correlationId: string };
 export class ApiError extends Error { constructor(public status: number, message: string) { super(message); } }

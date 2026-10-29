@@ -22,6 +22,38 @@ namespace Energy.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Energy.AppBranding", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<byte[]>("Logo")
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("Motto")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Branding");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Motto = "Energie verstehen.\nEffizienz gestalten.",
+                            Version = 1
+                        });
+                });
+
             modelBuilder.Entity("Energy.AppUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -30,6 +62,9 @@ namespace Energy.Api.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("DarkMode")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -233,6 +268,9 @@ namespace Energy.Api.Migrations
 
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Direction")
                         .IsRequired()
@@ -612,6 +650,9 @@ namespace Energy.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("BlobDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("BlobName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -625,6 +666,9 @@ namespace Energy.Api.Migrations
 
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -658,6 +702,10 @@ namespace Energy.Api.Migrations
                     b.Property<decimal>("AnnualHours")
                         .HasPrecision(24, 6)
                         .HasColumnType("numeric(24,6)");
+
+                    b.Property<string>("AssetRole")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("AssetType")
                         .IsRequired()
@@ -801,6 +849,91 @@ namespace Energy.Api.Migrations
                     b.HasIndex("CustomerId", "ParentId");
 
                     b.ToTable("Nodes");
+                });
+
+            modelBuilder.Entity("Energy.Vehicle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("BatteryKwh")
+                        .HasPrecision(24, 6)
+                        .HasColumnType("numeric(24,6)");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DriveType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly?>("FirstRegistration")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Fuel")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("InitialMileage")
+                        .HasPrecision(24, 6)
+                        .HasColumnType("numeric(24,6)");
+
+                    b.Property<string>("Manufacturer")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Plate")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("RatedPowerKw")
+                        .HasPrecision(24, 6)
+                        .HasColumnType("numeric(24,6)");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("VehicleType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Vin")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId", "Number")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
+
+                    b.HasIndex("CustomerId", "SiteId");
+
+                    b.ToTable("Vehicles");
                 });
 
             modelBuilder.Entity("Energy.AuditEvent", b =>
@@ -1029,6 +1162,22 @@ namespace Energy.Api.Migrations
                         .HasForeignKey("CustomerId", "ParentId")
                         .HasPrincipalKey("CustomerId", "Id")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Energy.Vehicle", b =>
+                {
+                    b.HasOne("Energy.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Energy.TechnicalNode", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId", "SiteId")
+                        .HasPrincipalKey("CustomerId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Energy.AppUser", b =>

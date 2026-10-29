@@ -22,6 +22,7 @@ export type Node = {
   supplySystems: string;
   timeZone: string;
   assetType: string;
+  assetRole: string;
   manufacturer: string;
   model: string;
   quantity: number;
@@ -140,7 +141,7 @@ export const kinds: Record<string, string> = {
   Area: 'Bereich / Anlage',
   Distribution: 'Verteilung',
   ConsumerGroup: 'Verbrauchergruppe',
-  ConsumerAsset: 'Einzelverbraucher',
+  ConsumerAsset: 'Hardware / Verbraucher / Erzeuger',
 };
 export const media: Record<string, string> = {
   Electricity: 'Strom',
@@ -199,6 +200,7 @@ export const emptyNode: Omit<Node, 'id' | 'customerId'> = {
   supplySystems: '',
   timeZone: 'Europe/Berlin',
   assetType: '',
+  assetRole: 'Consumption',
   manufacturer: '',
   model: '',
   quantity: 1,

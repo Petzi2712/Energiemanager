@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { api, ApiError, date } from '../api';
-import { Badge, Dialog, ErrorBox, Field } from '../ui';
-import { DeviceFields, type DeviceForm } from './forms';
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api, ApiError, date } from "../api";
+import { Badge, Dialog, ErrorBox, Field } from "../ui";
+import { DeviceFields, type DeviceForm } from "./forms";
+import { DeleteDialog } from "../DeleteDialog";
+import { Consumption } from "./Consumption";
 import {
   events,
   localInput,
@@ -13,15 +15,15 @@ import {
   type PointView,
   type Reading,
   type Tree,
-} from './types';
+} from "./types";
 
 export async function upload(file: File, query: string) {
   const form = new FormData();
-  form.set('file', file);
-  return api(`/documents?${query}`, 'POST', form);
+  form.set("file", file);
+  return api(`/documents?${query}`, "POST", form);
 }
 function PhotoPreview({ file }: { file: File }) {
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState("");
   useEffect(() => {
     if (file.size > 6 * 1024 * 1024) return;
     const value = URL.createObjectURL(file);
@@ -52,49 +54,73 @@ export function Documents({
   onSaved?: () => Promise<void>;
 }) {
   const q = useQuery({
-    queryKey: ['documents', nodeId],
+    queryKey: ["documents", nodeId],
     queryFn: () => api<Document[]>(`/documents?nodeId=${nodeId}`),
     enabled: !!nodeId,
   });
   const [error, setError] = useState<unknown>(),
     [busy, setBusy] = useState(false);
+  const [remove, setRemove] = useState<Document | null>(null);
   return (
-    <section className={nodeId ? 'panel' : 'reading-documents'}>
+    <section className={nodeId ? "panel" : "reading-documents"}>
       {nodeId && <h2>Fotos und technische Dokumente</h2>}
-      <ErrorBox error={error} />
+      <ErrorBox error={error || q.error} />
       <div className="document-list">
         {(documents || q.data || []).map((d) => (
-          <a
-            key={d.id}
-            href={`/api/documents/${d.id}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {d.contentType.startsWith('image/') ? (
-              <img src={`/api/documents/${d.id}`} alt={d.name} loading="lazy" />
-            ) : (
-              <span className="pdf-icon">PDF</span>
+          <div className="document-card" key={d.id}>
+            <a href={`/api/documents/${d.id}`} target="_blank" rel="noreferrer">
+              {d.contentType.startsWith("image/") ? (
+                <img
+                  src={`/api/documents/${d.id}`}
+                  alt={d.name}
+                  loading="lazy"
+                />
+              ) : (
+                <span className="pdf-icon">PDF</span>
+              )}
+              <span>{d.name}</span>
+            </a>
+            {canWrite && (
+              <button
+                className="danger document-delete"
+                onClick={() => setRemove(d)}
+                aria-label={`Datei löschen: ${d.name}`}
+              >
+                Löschen
+              </button>
             )}
-            <span>{d.name}</span>
-          </a>
+          </div>
         ))}
       </div>
+      {remove && (
+        <DeleteDialog
+          title="Datei löschen"
+          path={`/documents/${remove.id}`}
+          description={`„${remove.name}“ löschen? Die Löschung wird protokolliert.`}
+          onClose={() => setRemove(null)}
+          onDeleted={async () => {
+            setRemove(null);
+            if (nodeId) await q.refetch();
+            await onSaved?.();
+          }}
+        />
+      )}
       {canWrite && (
         <label className="file-label">
           {busy
-            ? 'Upload läuft …'
+            ? "Upload läuft …"
             : nodeId
-              ? 'Foto / PDF hinzufügen (max. 6 MB)'
-              : 'Ablesefoto hinzufügen (max. 6 MB)'}
+              ? "Foto / PDF hinzufügen (max. 6 MB)"
+              : "Ablesefoto hinzufügen (max. 6 MB)"}
           <input
             type="file"
             disabled={busy}
             accept={
               nodeId
-                ? 'image/jpeg,image/png,application/pdf'
-                : 'image/jpeg,image/png'
+                ? "image/jpeg,image/png,application/pdf"
+                : "image/jpeg,image/png"
             }
-            capture={nodeId ? undefined : 'environment'}
+            capture={nodeId ? undefined : "environment"}
             onChange={async (e) => {
               const file = e.target.files?.[0];
               if (!file) return;
@@ -111,7 +137,7 @@ export function Documents({
                 setError(e);
               } finally {
                 setBusy(false);
-                e.target.value = '';
+                e.target.value = "";
               }
             }}
           />
@@ -128,6 +154,7 @@ export function MeterPanel({
   refresh,
   onEdit,
   onAssignment,
+  onDeleted,
 }: {
   view: PointView;
   tree: Tree;
@@ -136,14 +163,16 @@ export function MeterPanel({
   refresh: () => Promise<void>;
   onEdit: () => void;
   onAssignment: () => void;
+  onDeleted: () => Promise<void>;
 }) {
   const q = useQuery({
-    queryKey: ['meter', view.point.id],
+    queryKey: ["meter", view.point.id],
     queryFn: () => api<Detail>(`/meters/${view.point.id}`),
   });
   const [edit, setEdit] = useState<Reading | null>(null),
     [replacement, setReplacement] = useState(false),
-    [history, setHistory] = useState(false);
+    [history, setHistory] = useState(false),
+    [remove, setRemove] = useState(false);
   const data = q.data;
   const current =
     data?.installations.find((i) => !i.validTo) || view.installation;
@@ -152,15 +181,15 @@ export function MeterPanel({
   const p = data?.point || view.point;
   const timeZone =
     tree.nodes.find((n) => n.node.id === view.assignment.siteId)?.node
-      .timeZone || 'Europe/Berlin';
+      .timeZone || "Europe/Berlin";
   const displayDate = (value?: string | null) =>
     value
-      ? new Intl.DateTimeFormat('de-DE', {
-          dateStyle: 'medium',
-          timeStyle: 'short',
+      ? new Intl.DateTimeFormat("de-DE", {
+          dateStyle: "medium",
+          timeStyle: "short",
           timeZone,
         }).format(new Date(value))
-      : 'Noch keine Ablesung';
+      : "Noch keine Ablesung";
   async function reload() {
     await q.refetch();
     await refresh();
@@ -176,12 +205,12 @@ export function MeterPanel({
             </span>
             <h2>{p.name}</h2>
           </div>
-          <Badge active={p.isActive}>{p.isActive ? 'Aktiv' : 'Inaktiv'}</Badge>
+          <Badge active={p.isActive}>{p.isActive ? "Aktiv" : "Inaktiv"}</Badge>
         </div>
         <dl className="meter-summary">
           <div>
             <dt>Zählernummer</dt>
-            <dd>{device?.number || '–'}</dd>
+            <dd>{device?.number || "–"}</dd>
           </div>
           <div>
             <dt>Letzte Ablesung</dt>
@@ -192,7 +221,7 @@ export function MeterPanel({
             <dd>
               {view.latestReading
                 ? `${num(view.latestReading.value)} ${p.unit}`
-                : 'Noch kein Stand'}
+                : "Noch kein Stand"}
             </dd>
           </div>
           <div>
@@ -207,10 +236,13 @@ export function MeterPanel({
             <>
               <button onClick={onEdit}>Messstelle bearbeiten</button>
               <button onClick={onAssignment}>Zuordnung ändern</button>
+              <button className="danger" onClick={() => setRemove(true)}>
+                Zähler löschen
+              </button>
             </>
           )}
           <button onClick={() => setHistory(!history)}>
-            {history ? 'Gerätehistorie schließen' : 'Geräte und Zuordnungen'}
+            {history ? "Gerätehistorie schließen" : "Geräte und Zuordnungen"}
           </button>
           {canWrite && p.isActive && (
             <button onClick={() => setReplacement(true)}>
@@ -231,9 +263,9 @@ export function MeterPanel({
               <p key={i.id}>
                 <strong>
                   {data.devices.find((d) => d.id === i.deviceId)?.number}
-                </strong>{' '}
-                · {displayDate(i.validFrom)} bis{' '}
-                {i.validTo ? displayDate(i.validTo) : 'heute'} · Faktor{' '}
+                </strong>{" "}
+                · {displayDate(i.validFrom)} bis{" "}
+                {i.validTo ? displayDate(i.validTo) : "heute"} · Faktor{" "}
                 {num(i.factor)}
               </p>
             ))}
@@ -241,9 +273,9 @@ export function MeterPanel({
             {data.assignments.map((a) => (
               <p key={a.id}>
                 {tree.nodes.find((n) => n.node.id === a.nodeId)?.node.name ||
-                  'Historischer Anlagenknoten'}{' '}
-                · {displayDate(a.validFrom)} bis{' '}
-                {a.validTo ? displayDate(a.validTo) : 'heute'}
+                  "Historischer Anlagenknoten"}{" "}
+                · {displayDate(a.validFrom)} bis{" "}
+                {a.validTo ? displayDate(a.validTo) : "heute"}
               </p>
             ))}
             {data.replacements.map((r) => (
@@ -300,13 +332,13 @@ export function MeterPanel({
                     {num(r.value)} {p.unit}
                   </td>
                   <td>
-                    {num(consumption)} {consumption == null ? '' : p.unit}
+                    {num(consumption)} {consumption == null ? "" : p.unit}
                   </td>
                   <td>
-                    <Badge active={r.status === 'Gültig'}>{r.status}</Badge>
+                    <Badge active={r.status === "Gültig"}>{r.status}</Badge>
                     <small>
                       {r.event}
-                      {r.isRollover ? ' · Überlauf' : ''}
+                      {r.isRollover ? " · Überlauf" : ""}
                     </small>
                     <small>{r.comment}</small>
                     {r.reason && <small>Begründung: {r.reason}</small>}
@@ -360,7 +392,17 @@ export function MeterPanel({
           </details>
         )}
       </section>
-      <Balance pointId={p.id} />
+      <Consumption pointId={p.id} version={p.version} />
+      {remove && (
+        <DeleteDialog
+          title={`Zähler löschen · ${p.name}`}
+          path={`/meters/${p.id}`}
+          version={p.version}
+          description="Der Zähler wird aus dem Anlagenbaum entfernt. Ablesungen und Gerätehistorie bleiben zur Nachvollziehbarkeit gespeichert. Vorhandene Unterzähler zuerst umhängen oder löschen."
+          onClose={() => setRemove(false)}
+          onDeleted={onDeleted}
+        />
+      )}
       {edit && (
         <Dialog
           title="Zählerstand nachvollziehbar korrigieren"
@@ -399,17 +441,17 @@ function ReadingForm({
   onSaved,
 }: {
   point: PointView;
-  installation: PointView['installation'];
+  installation: PointView["installation"];
   reading?: Reading;
   onSaved: () => Promise<void>;
 }) {
   const [at, setAt] = useState(
       reading ? localInput(new Date(reading.at)) : localInput(),
     ),
-    [value, setValue] = useState(reading ? String(reading.value) : ''),
-    [comment, setComment] = useState(reading?.comment || ''),
-    [event, setEvent] = useState(reading?.event || ''),
-    [reason, setReason] = useState(''),
+    [value, setValue] = useState(reading ? String(reading.value) : ""),
+    [comment, setComment] = useState(reading?.comment || ""),
+    [event, setEvent] = useState(reading?.event || ""),
+    [reason, setReason] = useState(""),
     [rollover, setRollover] = useState(reading?.isRollover || false),
     [confirm, setConfirm] = useState(false),
     [warning, setWarning] = useState(false),
@@ -418,7 +460,7 @@ function ReadingForm({
     [busy, setBusy] = useState(false);
   const [fileKey, setFileKey] = useState(0);
   return (
-    <section className={reading ? '' : 'panel'}>
+    <section className={reading ? "" : "panel"}>
       {!reading && <h2>Neuen Zählerstand erfassen</h2>}
       <ErrorBox error={error} />
       <form
@@ -428,8 +470,8 @@ function ReadingForm({
           setError(undefined);
           try {
             const r = await api<Reading>(
-              `/meters/${point.point.id}/readings${reading ? `/${reading.id}` : ''}`,
-              reading ? 'PUT' : 'POST',
+              `/meters/${point.point.id}/readings${reading ? `/${reading.id}` : ""}`,
+              reading ? "PUT" : "POST",
               {
                 at: reading?.at || new Date(at).toISOString(),
                 value: Number(value),
@@ -441,7 +483,7 @@ function ReadingForm({
                 version: reading?.version || 1,
               },
             );
-            setValue('');
+            setValue("");
             setPhoto(null);
             setFileKey((k) => k + 1);
             if (photo) {
@@ -450,13 +492,13 @@ function ReadingForm({
               } catch {
                 await onSaved();
                 throw new Error(
-                  'Ablesung gespeichert. Foto konnte nicht hochgeladen werden; bitte in der Historie ergänzen.',
+                  "Ablesung gespeichert. Foto konnte nicht hochgeladen werden; bitte in der Historie ergänzen.",
                 );
               }
             }
-            setValue('');
-            setComment('');
-            setReason('');
+            setValue("");
+            setComment("");
+            setReason("");
             setConfirm(false);
             setWarning(false);
             setPhoto(null);
@@ -487,7 +529,7 @@ function ReadingForm({
               type="number"
               inputMode="decimal"
               min="0"
-              step={installation?.resolution || 'any'}
+              step={installation?.resolution || "any"}
               required
               value={value}
               onChange={(e) => setValue(e.target.value)}
@@ -497,10 +539,10 @@ function ReadingForm({
             <select value={event} onChange={(e) => setEvent(e.target.value)}>
               {events.map((v) => (
                 <option key={v} value={v}>
-                  {v || 'Kein besonderes Ereignis'}
+                  {v || "Kein besonderes Ereignis"}
                 </option>
               ))}
-              {reading?.event === 'Zählertausch' && (
+              {reading?.event === "Zählertausch" && (
                 <option>Zählertausch</option>
               )}
             </select>
@@ -562,10 +604,10 @@ function ReadingForm({
         )}
         <button className="primary" disabled={busy}>
           {busy
-            ? 'Speichern …'
+            ? "Speichern …"
             : reading
-              ? 'Korrektur speichern'
-              : 'Zählerstand speichern'}
+              ? "Korrektur speichern"
+              : "Zählerstand speichern"}
         </button>
       </form>
     </section>
@@ -581,15 +623,15 @@ function ReplacementForm({
   onSaved: () => Promise<void>;
 }) {
   const [at, setAt] = useState(localInput()),
-    [oldEnd, setOldEnd] = useState(''),
-    [newStart, setNewStart] = useState(''),
-    [reason, setReason] = useState(''),
+    [oldEnd, setOldEnd] = useState(""),
+    [newStart, setNewStart] = useState(""),
+    [reason, setReason] = useState(""),
     [incomplete, setIncomplete] = useState(false),
     [device, setDevice] = useState<DeviceForm>({
-      number: '',
-      manufacturer: '',
-      model: '',
-      meterType: '',
+      number: "",
+      manufacturer: "",
+      model: "",
+      meterType: "",
       factor: 1,
       decimals: 0,
       resolution: 1,
@@ -623,20 +665,20 @@ function ReplacementForm({
           let saved = false;
           try {
             if (
-              (photos.old && oldEnd === '') ||
-              (photos.next && newStart === '')
+              (photos.old && oldEnd === "") ||
+              (photos.next && newStart === "")
             )
               throw new Error(
-                'Zum Foto des alten oder neuen Geräts bitte den zugehörigen Zählerstand angeben. Alternativ das Foto später am Katastereintrag ablegen.',
+                "Zum Foto des alten oder neuen Geräts bitte den zugehörigen Zählerstand angeben. Alternativ das Foto später am Katastereintrag ablegen.",
               );
             const r = await api<{
               at: string;
               oldInstallationId: string;
               newInstallationId: string;
-            }>(`/meters/${view.point.id}/replacement`, 'POST', {
+            }>(`/meters/${view.point.id}/replacement`, "POST", {
               at: new Date(at).toISOString(),
-              oldEndValue: oldEnd === '' ? null : Number(oldEnd),
-              newStartValue: newStart === '' ? null : Number(newStart),
+              oldEndValue: oldEnd === "" ? null : Number(oldEnd),
+              newStartValue: newStart === "" ? null : Number(newStart),
               device,
               reason,
               confirmIncomplete: incomplete,
@@ -664,7 +706,7 @@ function ReplacementForm({
           } catch (e) {
             setError(
               saved
-                ? 'Zählertausch gespeichert; Foto konnte nicht vollständig hochgeladen werden. Bitte schließen und in der Ablesehistorie ergänzen.'
+                ? "Zählertausch gespeichert; Foto konnte nicht vollständig hochgeladen werden. Bitte schließen und in der Ablesehistorie ergänzen."
                 : e,
             );
           } finally {
@@ -752,119 +794,13 @@ function ReplacementForm({
               else onClose();
             }}
           >
-            {committed ? 'Fertig' : 'Abbrechen'}
+            {committed ? "Fertig" : "Abbrechen"}
           </button>
           <button className="primary" disabled={busy || committed}>
-            {busy ? 'Speichern …' : 'Zählertausch speichern'}
+            {busy ? "Speichern …" : "Zählertausch speichern"}
           </button>
         </div>
       </form>
     </Dialog>
-  );
-}
-type BalanceResult = {
-  status: string;
-  consumption: number | null;
-  submeterTotal: number | null;
-  unassignedConsumption: number | null;
-  unit: string;
-  warning: string;
-  children: {
-    pointId: string;
-    name: string;
-    consumption: number | null;
-    unit: string;
-  }[];
-};
-function Balance({ pointId }: { pointId: string }) {
-  const [from, setFrom] = useState(
-      localInput(new Date(Date.now() - 30 * 86400000)),
-    ),
-    [to, setTo] = useState(localInput()),
-    [result, setResult] = useState<BalanceResult | null>(null),
-    [error, setError] = useState<unknown>(),
-    [busy, setBusy] = useState(false);
-  return (
-    <section className="panel">
-      <h2>Verbrauch und Unterzählerbilanz</h2>
-      <p className="subtle">
-        Für eine exakte Bilanz müssen Randablesungen zum selben Zeitpunkt
-        vorliegen. Direkte Unterzähler werden einmal berücksichtigt.
-      </p>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          setError(undefined);
-          try {
-            setResult(
-              await api<BalanceResult>(
-                `/meters/${pointId}/balance?from=${encodeURIComponent(new Date(from).toISOString())}&to=${encodeURIComponent(new Date(to).toISOString())}`,
-              ),
-            );
-          } catch (e) {
-            setError(e);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <div className="form-grid">
-          <Field label="Bilanzbeginn (Browser-Ortszeit)">
-            <input
-              type="datetime-local"
-              step="1"
-              required
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-          </Field>
-          <Field label="Bilanzende (Browser-Ortszeit)">
-            <input
-              type="datetime-local"
-              step="1"
-              required
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
-          </Field>
-        </div>
-        <button disabled={busy}>Bilanz berechnen</button>
-      </form>
-      <ErrorBox error={error} />
-      {result && (
-        <div className="balance-result">
-          <Badge active={result.status === 'Vollständig'}>
-            {result.status}
-          </Badge>
-          {result.warning && <p className="notice">{result.warning}</p>}
-          <dl className="detail-grid">
-            <div>
-              <dt>Hauptzählerverbrauch</dt>
-              <dd>
-                {num(result.consumption)} {result.unit}
-              </dd>
-            </div>
-            <div>
-              <dt>Summe direkter Unterzähler</dt>
-              <dd>
-                {num(result.submeterTotal)} {result.unit}
-              </dd>
-            </div>
-            <div>
-              <dt>Nicht zugeordneter Verbrauch</dt>
-              <dd>
-                {num(result.unassignedConsumption)} {result.unit}
-              </dd>
-            </div>
-          </dl>
-          {result.children.map((c) => (
-            <p key={c.pointId}>
-              {c.name}: {num(c.consumption)} {c.unit}
-            </p>
-          ))}
-        </div>
-      )}
-    </section>
   );
 }

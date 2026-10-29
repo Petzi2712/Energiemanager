@@ -80,6 +80,17 @@ public static class DocumentEndpoints
             await Authorize(db, c, nodeId, null);
             return Results.Ok(await db.Documents.Where(x => x.NodeId == nodeId).Select(x => new { x.Id, x.Name, x.ContentType, x.CreatedAt }).ToListAsync());
         }).RequireAuthorization();
+        api.MapDelete("/documents/{id:guid}", async (Guid id, AppDbContext db, HttpContext c, IPrivateFileStore store, ILogger<DocumentCleanup> log) =>
+        {
+            Writer(c); var doc = await db.Documents.SingleOrDefaultAsync(x => x.Id == id);
+            Require(doc != null, "Datei nicht gefunden.", 404); await Authorize(db, c, doc!.NodeId, doc.ReadingId);
+            if (doc.NodeId.HasValue) Admin(c);
+            doc.DeletedAt = DateTimeOffset.UtcNow;
+            Security.Audit(db, c, "Dokument.Gelöscht", id.ToString(), doc.CustomerId, System.Text.Json.JsonSerializer.Serialize(new { doc.Name, doc.NodeId, doc.ReadingId }));
+            await db.SaveChangesAsync();
+            await DocumentCleanup.RemoveBlob(doc, store, db, log);
+            return Results.Ok(new { message = "Datei gelöscht und protokolliert." });
+        }).RequireAuthorization();
         api.MapGet("/documents/{id:guid}", async (Guid id, AppDbContext db, HttpContext c, IPrivateFileStore store) =>
         {
             var doc = await db.Documents.FindAsync(id); Require(doc != null, "Datei nicht gefunden.", 404);
@@ -99,5 +110,30 @@ public static class DocumentEndpoints
         var r = await db.Readings.FindAsync(readingId!.Value); Require(r != null, "Ablesung nicht gefunden.", 404);
         var p = await MeterService.Point(db, c, r!.PointId); var allowed = await Sites(db, c, p.CustomerId);
         Require(await MeterService.VisibleReadings(db, p.Id, allowed).AnyAsync(x => x.Id == r.Id), "Ablesung nicht gefunden.", 404); return p.CustomerId;
+    }
+}
+
+// Erst die autorisierte Löschung speichern. Ein vorübergehender Speicherausfall
+// darf die Datei nicht wieder sichtbar machen; die Bereinigung wird wiederholt.
+public class DocumentCleanup(IServiceScopeFactory scopes, ILogger<DocumentCleanup> log) : BackgroundService
+{
+    public static async Task RemoveBlob(StoredDocument doc, IPrivateFileStore store, AppDbContext db, ILogger log)
+    {
+        try { await store.Delete(doc.BlobName); doc.BlobDeleted = true; await db.SaveChangesAsync(); }
+        catch (Exception ex) when (ex is RequestFailedException or HttpRequestException or TaskCanceledException)
+        { log.LogWarning("Dateibereinigung für Dokument {DocumentId} wird wiederholt.", doc.Id); }
+    }
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
+        try {
+            while (await timer.WaitForNextTickAsync(stoppingToken)) {
+                using var scope = scopes.CreateScope(); var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                try {
+                    var docs = await db.Documents.IgnoreQueryFilters().Where(x => x.DeletedAt != null && !x.BlobDeleted).Take(50).ToListAsync(stoppingToken);
+                    foreach (var doc in docs) await RemoveBlob(doc, scope.ServiceProvider.GetRequiredService<IPrivateFileStore>(), db, log);
+                } catch (Exception ex) when (!stoppingToken.IsCancellationRequested) { log.LogWarning(ex, "Dateibereinigung wird später wiederholt."); }
+            }
+        } catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
     }
 }

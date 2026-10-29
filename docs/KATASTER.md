@@ -1,4 +1,4 @@
-# Kundenkataster und Zähleranlagenbaum – Version 0.2
+# Kundenkataster und Zähleranlagenbaum – Version 0.3
 
 ## Einen Kunden technisch aufnehmen
 
@@ -50,11 +50,17 @@ Sind Austauschstände unbekannt, muss „unvollständig“ ausdrücklich bestät
 
 ## Verbrauch und Unterzählerbilanz
 
-Bilanzbeginn und -ende auswählen. Für jede beteiligte Geräteperiode sind exakte Randablesungen erforderlich; es wird nicht still interpoliert. Gerätewechsel werden je Periode berechnet und nur bei vollständigen Übergangsdaten addiert.
+Die Ansicht lädt beim Öffnen einer Messstelle automatisch die letzten 30 Tage. Datum und Uhrzeit sind frei einstellbar. „Balken gruppieren nach“ wechselt zwischen Tagen, Wochen (Montagsgrenzen), Monaten, Jahren und dem Gesamtzeitraum. Kalendergrenzen richten sich nach der Standortzeitzone; Tage bei Zeitumstellungen können 23 oder 25 Stunden lang sein.
+
+Bekannte Zählerdifferenzen werden je Gerät mit dessen Faktor berechnet. Innerhalb eines durch zwei Ablesungen belegten Intervalls verteilt die Ansicht den Verbrauch nach der tatsächlichen Zeitdauer. Solche Balken heißen „Zeitanteilig“: Sie sind keine gemessenen Tageslastgänge. Die Summen bleiben über die Gruppierungen erhalten. Außerhalb belegter Intervalle wird nicht extrapoliert. Fehlt ein Austauschstand, entsteht eine Lücke; es wird keine Differenz zwischen alten und neuen Geräten gebildet.
+
+Bei unvollständiger Abdeckung zeigt die Zusammenfassung den **erfassten Teilverbrauch** und den abgedeckten Zeitanteil. Ein Strich bedeutet „unbekannt“, nicht null. Ohne passende Ablesungen können auch im voreingestellten Zeitraum keine Werte erscheinen. Dann Anfangs-/Endstände ergänzen oder einen belegten Zeitraum wählen. Beim Upgrade werden keine neuen Messwerte erfunden.
+
+Hauptzähler, direkte Unterzähler und nicht zugeordneter Verbrauch lassen sich über die Legende ein-/ausblenden. Jeder Balken hat Werteinformationen; die aufklappbare Tabelle bietet alle Werte als Text. Breite Diagramme sind innerhalb des Diagrammbereichs scrollbar. Die streng exakte API `/meters/{id}/balance` bleibt für Randablesungen ohne zeitanteilige Verteilung erhalten.
 
 Der Hauptzählerverbrauch wird mit der Summe seiner **direkten** Unterzähler verglichen. Weitere Unterebenen werden nicht erneut addiert. Nicht zugeordneter Verbrauch = Hauptzählerverbrauch − direkte Unterzählerverbräuche. Absolutstände werden nicht gegeneinander verrechnet.
 
-Bei Datenlücken, unterschiedlichen Einheiten, eingeschränkten Standortrechten oder Zuordnungsänderungen im Zeitraum ist die Bilanz unvollständig. Unterschiedliche Medien werden getrennt behandelt. Einheiten werden in dieser Version nicht automatisch umgerechnet. Eine negative Restmenge bleibt sichtbar und führt zu einem Hinweis, das Messkonzept zu prüfen.
+Bei Datenlücken, unterschiedlichen Einheiten oder eingeschränkten Standortrechten bleibt die Bilanz unvollständig. Zuordnungsänderungen werden in der neuen Diagrammansicht nach ihren gültigen Zeitabschnitten berücksichtigt. Unterschiedliche Medien werden getrennt behandelt. Einheiten werden in dieser Version nicht automatisch umgerechnet. Eine negative Restmenge bleibt sichtbar und führt zu einem Hinweis, das Messkonzept zu prüfen.
 
 ## Rechte und Bestandsschutz
 
@@ -62,6 +68,27 @@ Kundenbenutzer sehen ausschließlich freigegebene Kundenstandorte. Unter „Benu
 
 Eingeschränkte Kundenadministratoren vererben ihre Standortrechte an neu angelegte Benutzer. Benutzer mit umfassenderen Standortrechten dürfen sie nicht ändern. Auch historische Ablesungen und Fotos werden anhand der jeweils gültigen Standortperiode geprüft.
 
-Anlagen und Messstellen werden deaktiviert, nicht hart gelöscht. Aktive Untereinträge müssen zuvor deaktiviert werden. Änderungen, Rechtevergaben, Ablesungen, Gerätewechsel und Dokumentzugriffe erscheinen im Audit-Protokoll.
+Anlagen können deaktiviert werden. Messstellen kann die Systemadministration mit „Zähler löschen“ und einem Löschgrund entfernen. Vorhandene Unterzähler müssen zuvor umgehängt oder gelöscht werden. Die Messstelle verschwindet aus der Bedienoberfläche und kann keine neuen Ablesungen erhalten; historische Messwerte und Geräteperioden bleiben gespeichert. Frühere Unterzählerverbräuche bleiben in historischen Hauptzählerbilanzen enthalten. Löschgrund, Benutzer, Zeitpunkt und Messstellenzustand erscheinen im Audit-Protokoll.
 
-Version 0.2 ergänzt bestehende Installationen per Migration. Bereits vorhandene Stammdaten und Benutzer werden nicht ersetzt. Die technische Demo-Struktur entsteht nur bei einer frisch initialisierten Demo-Datenbank: Kunde A mit zwei Standorten, Gebäuden, Verbraucherstruktur, einem Stromhauptzähler, drei Stromunterzählern und Wasser/Gas/Wärme/Kälte; Kunde B mit einem Standort, Gebäude und eigenen Messstellen. Fahrzeuge gehören zum späteren Fuhrparkmodul.
+Fotos und technische Dateien besitzen einen Löschbutton und einen Bestätigungsdialog. Beim Kataster darf nur die Systemadministration löschen; bei Ablesefotos dürfen schreibberechtigte Benutzer ihres freigegebenen Standortes löschen. Dateien sind nach der Löschung sofort nicht mehr abrufbar. Die private Blob-Datei wird entfernt; bei vorübergehendem Speicherausfall wird die Bereinigung im Hintergrund wiederholt. Das Löschprotokoll bleibt erhalten.
+
+Version 0.2 ergänzt bestehende Installationen per Migration. Bereits vorhandene Stammdaten und Benutzer werden nicht ersetzt. Die technische Demo-Struktur entsteht nur bei einer frisch initialisierten Demo-Datenbank: Kunde A mit zwei Standorten, Gebäuden, Verbraucherstruktur, einem Stromhauptzähler, drei Stromunterzählern und Wasser/Gas/Wärme/Kälte; Kunde B mit einem Standort, Gebäude und eigenen Messstellen. Fahrzeuge lassen sich ab Version 0.3 im eigenen Fuhrparkmenü erfassen. Es werden beim Upgrade keine Fahrzeug-Demodaten eingefügt.
+
+
+## Hardware und Erzeugungsanlagen
+
+Der Kundenkataster enthält die technische Hardwarestruktur. Unter einem Gebäude oder Anlagenbereich „Untereintrag anlegen“ und den Strukturtyp „Hardware / Verbraucher / Erzeuger“ wählen. Kategorien wie Beleuchtung, Maschinen, Wärmeanlagen, EDV, Serverraum, BHKW, Photovoltaik und Windanlage sind vorgeschlagen und frei erweiterbar. Die Energierolle unterscheidet Verbraucher, Erzeuger und kombinierte Anlagen. Hersteller, Modell, Baujahr, Energieträger, Anzahl, Leistungen, Betriebsstunden und Zusatzfelder dokumentieren die Technik. Leistung und Jahresenergie bleiben ausdrücklich technische Schätzungen.
+
+Messstellenlisten, Zähleranlage und Ablesungen stehen ausschließlich im Zähleranlagenbaum. Der Kundenkataster zeigt die Hardware und deren Dokumente.
+
+## Zählerhierarchie mit Drag-and-drop
+
+Als Systemadministrator einen Zähler auf einen anderen Zähler ziehen, um ihn als Unterzähler zuzuordnen. Auf einen Anlagenknoten ziehen, um ihn dort als Hauptzähler einzuordnen. Anschließend im geöffneten Dialog Ziel und Gültigkeitsdatum bestätigen. Alternativ „Zuordnung ändern“ verwenden, insbesondere auf Touchgeräten oder mit Tastatur.
+
+Der Server prüft Kunde, Standort, Medium, Einheit, Messrichtung und Kreisfreiheit. Historische Auswertungen behalten die zum jeweiligen Zeitraum gültige Hierarchie. Eine heute geänderte Zuordnung ordnet frühere Verbräuche nicht rückwirkend um. Das Gültigkeitsdatum muss nach den vorhandenen Ablesungen liegen.
+
+## Fuhrpark, Branding und Darstellung
+
+„Fuhrpark“ steht direkt unter dem Kundenkataster. Kundenauswahl in der fixierten Kopfzeile verwenden. Die Systemadministration legt Fahrzeuge an, bearbeitet deren Attribute und löscht sie mit protokolliertem Grund. Standortzuordnung ist verpflichtend; Kundenbenutzer und Leser sehen ausschließlich ihre freigegebenen Fahrzeuge. Tank-/Ladevorgänge und Fahrleistungsanalysen sind noch nicht enthalten.
+
+„Mein Konto → Logo und Anmeldebildschirm“ ist für die Systemadministration verfügbar. Das Logo (PNG/JPEG bis 2 MB) und der mehrzeilige Leitspruch gelten anwendungsweit, einschließlich des Loginbildschirms. Das persönliche Farbschema wird unter „Darstellung → Darkmodus aktivieren“ gespeichert. Die Kopfzeile mit Kundenauswahl und Benutzer bleibt beim Scrollen sichtbar.
