@@ -84,5 +84,6 @@ public static class Seed
             Make("lesen@weserpark.example", "Kim Muster", Roles.Reader, b));
         db.Audit.Add(new AuditEvent { Action = "Demo.Initialisiert", Details = "Zwei Demo-Kunden, vier Benutzer. Keine Messwerte in Phase 1." });
         await db.SaveChangesAsync();
+        await TechnicalSeed.Run(db, a, b);
     }
 }

@@ -1,5 +1,21 @@
 # Architektur und erster Entwicklungsabschnitt
 
+## Ergänzung: technisches Kataster und Zählerverwaltung v0.2
+
+Der modulare Monolith wurde um `TechnicalEndpoints`, `MeterEndpoints`, `MeterService`, `DocumentEndpoints` und das erweiterte Dashboard ergänzt. Der Arbeitsablauf ist in [KATASTER.md](KATASTER.md) dokumentiert.
+
+`TechnicalNode` bildet einen typisierten relationalen Anlagenbaum aus Standort, Gebäude, Bereich/Anlage, Verteilung, Verbrauchergruppe und Einzelverbraucher. Fachliche Stammdaten liegen in eigenen Spalten, zusätzliche Textfelder in JSONB. Zusammengesetzte Fremdschlüssel verhindern kundenübergreifende Eltern-/Messstellenverknüpfungen. Versionszähler schützen parallele Bearbeitungen. Verbraucherberechnungen bleiben explizite Schätzungen.
+
+`MeasuringPoint` ist die dauerhafte Messstelle, `MeterDevice` das physische Gerät. `MeterInstallation` enthält dessen zeitliche Installation mit Faktor, Auflösung und Überlaufparametern. `MeterAssignment` historisiert Anlagenknoten, Standort und Hauptmessstelle. Partielle eindeutige Indizes erlauben nur eine offene Zuordnung/Installation pro Messstelle und eine offene Installation pro Gerät. Hierarchieänderungen prüfen Zyklen, Medium, Einheit und Messrichtung. Standortwechsel liegen nach vorhandenen Ablesungen; Anlagenknoten werden nicht rückwirkend verschoben.
+
+`MeterReading` trennt Ablese- und Speicherzeitpunkt und speichert Dezimalwerte. `ReadingRevision` erhält frühere Zustände bei Korrekturen; `MeterReplacement` verknüpft alte und neue Geräteperioden. Fehlende Austauschablesungen werden aus den gespeicherten Perioden abgeleitet und als unvollständig angezeigt. Messstellenmutationen verwenden serialisierbare Transaktionen und Versionszähler. Verbrauch wird innerhalb einer Geräteperiode ermittelt. Die Bilanz verlangt exakte Randablesungen und passende Zuordnungen/Einheiten, zählt direkte Unterzähler einmal und interpoliert fehlende Werte nicht stillschweigend.
+
+`SiteScope` und `SitePermission` ergänzen Kundenzuordnungen. Eine Beschränkung erlaubt ausgewählte Standorte oder mit leerer Auswahl keinen Standort. API, Historie und Dateizugriffe prüfen erlaubte Standortperioden. Eingeschränkte Kundenadministratoren vererben ihre Rechte und dürfen Benutzer mit weitergehenden Standortrechten nicht ändern.
+
+`StoredDocument` verknüpft private Dateien mit Katasterknoten oder Ablesungen. `IPrivateFileStore` trennt Anwendung und Speicher. Der Blob-Adapter verwendet lokal Azurite und später bei entsprechender Konfiguration Azure Blob Storage. JPEG/PNG werden mit Magick.NET normalisiert und von Metadaten bereinigt; PDFs als Download ausgeliefert. Die neue Migration ergänzt vorhandene Daten. Technische Demodaten entstehen ausschließlich bei einer neuen Demo-Installation.
+
+Die folgenden Abschnitte beschreiben die Phase-1-Grundlage. Der aktuelle Prüfstand steht in [PRUEFBERICHT.md](PRUEFBERICHT.md). Fuhrpark, Berichtswesen, PDCA und kaufmännische Module bleiben weitere Ausbaustufen.
+
 ## Technische Entscheidungen
 
 Modularer Monolith, mit getrennten HTTP-Modulen für Authentifizierung, Kunden und Benutzer. React 19/TypeScript und TanStack Query bilden das Frontend; Vite erstellt statische Assets. Nginx liefert die Anwendung und leitet API-Anfragen unter derselben Origin an ASP.NET Core 10 weiter. EF Core 10 und Npgsql speichern relationale Daten in PostgreSQL 17. Es werden gesperrte Paketversionen verwendet. Mailpit fängt lokale Reset-E-Mails ab.

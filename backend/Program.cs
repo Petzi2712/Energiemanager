@@ -34,6 +34,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     o.Events.OnRedirectToAccessDenied = c => { c.Response.StatusCode = 403; return Task.CompletedTask; };
 });
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton<IPrivateFileStore, BlobFileStore>();
 builder.Services.AddAntiforgery(o => { o.HeaderName = "X-CSRF-TOKEN"; o.Cookie.SameSite = SameSiteMode.Strict; });
 builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(builder.Configuration["App:DataKeyPath"] ?? "/app/keys")).SetApplicationName("sysDATIQ");
 builder.Services.AddOpenApi();
@@ -58,9 +59,11 @@ app.Use(async (c, next) =>
     c.Response.Headers["X-Content-Type-Options"] = "nosniff";
     c.Response.Headers["Cache-Control"] = "no-store";
     try { await next(); }
+    catch (TechnicalFault ex) { await Error(c, ex.Status, ex.Message); }
+    catch (BadHttpRequestException) { await Error(c, 400, "Anfrage oder Datei ist zu groß oder ungültig."); }
     catch (DbUpdateConcurrencyException) { await Error(c, 409, "Der Datensatz wurde zwischenzeitlich geändert. Bitte neu laden."); }
     catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
-    { await Error(c, 409, "Kundennummer oder E-Mail-Adresse ist bereits vergeben."); }
+    { await Error(c, 409, "Diese Nummer, E-Mail-Adresse oder Ablesung ist bereits vorhanden."); }
     catch (PostgresException ex) when (ex.SqlState == "40001")
     { await Error(c, 409, "Parallele Änderung. Bitte neu laden und erneut versuchen."); }
     catch (Exception ex)
@@ -103,11 +106,14 @@ var api = app.MapGroup("/api").AddEndpointFilter(async (context, next) =>
     }
     return await next(context);
 });
-api.MapGet("/health", async (AppDbContext db) => await db.Database.CanConnectAsync() ? Results.Ok(new { status = "ok", phase = 1 }) : Results.StatusCode(503));
+api.MapGet("/health", async (AppDbContext db) => await db.Database.CanConnectAsync() ? Results.Ok(new { status = "ok", phase = 2 }) : Results.StatusCode(503));
 api.MapGet("/auth/csrf", (HttpContext c, IAntiforgery a) => Results.Ok(new { token = a.GetAndStoreTokens(c).RequestToken }));
 AuthEndpoints.Map(api);
 CustomerEndpoints.Map(api);
 UserEndpoints.Map(api);
+TechnicalEndpoints.Map(api);
+MeterEndpoints.Map(api);
+DocumentEndpoints.Map(api);
 api.MapGet("/audit", async (AppDbContext db, HttpContext c, Guid? customerId, int? limit) =>
 {
     if (!c.IsAdmin()) return Results.Forbid();
@@ -120,13 +126,7 @@ api.MapGet("/audit", async (AppDbContext db, HttpContext c, Guid? customerId, in
     await db.SaveChangesAsync();
     return Results.Ok(rows);
 }).RequireAuthorization();
-api.MapGet("/dashboard", async (AppDbContext db, HttpContext c) =>
-{
-    var ids = await Security.AccessibleCustomers(db, c).Select(x => x.Id).ToListAsync();
-    var users = c.IsAdmin() ? await db.Users.CountAsync(x => x.IsActive && x.Memberships.Any(m => ids.Contains(m.CustomerId))) : (int?)null;
-    return Results.Ok(new { customers = ids.Count, activeUsers = users, phase = 1,
-        lastLoginAt = c.Current().LastLoginAt, demo = app.Configuration.GetValue("App:SeedDemo", false) });
-}).RequireAuthorization();
+DashboardEndpoints.Map(api, app.Configuration);
 await app.RunAsync();
 return 0;
 

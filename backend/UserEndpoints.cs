@@ -43,6 +43,18 @@ public static class UserEndpoints
             u.PasswordHash = hasher.HashPassword(u, "Start_Energie");
             u.Memberships = ids.Select(id => new CustomerUser { CustomerId = id, User = u }).ToList();
             db.Users.Add(u);
+            if (!c.IsAdmin())
+            {
+                foreach (var customerId in ids)
+                {
+                    if (await db.SiteScopes.AnyAsync(s => s.UserId == c.UserId() && s.CustomerId == customerId && s.Restricted))
+                    {
+                        db.SiteScopes.Add(new SiteScope { UserId = u.Id, CustomerId = customerId, Restricted = true });
+                        var allowedSites = await TechnicalAccess.Sites(db, c, customerId);
+                        foreach (var siteId in allowedSites) db.SitePermissions.Add(new SitePermission { UserId = u.Id, SiteId = siteId });
+                    }
+                }
+            }
             foreach (var id in ids) Security.Audit(db, c, "Benutzer.Angelegt", u.Id.ToString(), id, JsonSerializer.Serialize(new { u.Email, u.Role, u.Name, u.IsActive }));
             await db.SaveChangesAsync();
             return Results.Created($"/api/users/{u.Id}", new { u.Id, u.Email, u.Name });
@@ -59,6 +71,13 @@ public static class UserEndpoints
             if (!u.Memberships.Any(m => visible.Contains(m.CustomerId))) return Results.NotFound();
             if (u.Memberships.Any(m => !visible.Contains(m.CustomerId))) return Results.Json(new { message = "Der Benutzer besitzt weitere Kundenzuordnungen. Nur eine Administration mit Zugriff auf alle Zuordnungen darf ihn ändern." }, statusCode: 403);
             if (!c.IsAdmin() && (u.Role is Roles.Admin or Roles.CustomerAdmin || u.Memberships.Count != 1 || ids.Length != 1 || u.Memberships[0].CustomerId != ids[0])) return Results.Forbid();
+            if (!c.IsAdmin() && await db.SiteScopes.AnyAsync(s => s.UserId == c.UserId() && s.CustomerId == ids[0] && s.Restricted))
+            {
+                var allowedSites = await TechnicalAccess.Sites(db, c, ids[0]);
+                if (!await db.SiteScopes.AnyAsync(s => s.UserId == u.Id && s.CustomerId == ids[0] && s.Restricted) ||
+                    await db.SitePermissions.AnyAsync(s => s.UserId == u.Id && db.Nodes.Any(n => n.Id == s.SiteId && n.CustomerId == ids[0]) && !allowedSites.Contains(s.SiteId)))
+                    return Results.Json(new { message = "Dieser Benutzer besitzt weitergehende Standortrechte. Die Systemadministration muss ihn verwalten." }, statusCode: 403);
+            }
             if (u.SessionVersion != input.SessionVersion) return Results.Conflict(new { message = "Benutzer wurde geändert. Bitte neu laden." });
             if (u.Id == c.UserId() && (!input.IsActive || input.Role != u.Role))
                 return Results.BadRequest(new { message = "Eigene Rolle und eigener Aktivstatus können hier nicht geändert werden." });

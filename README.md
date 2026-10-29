@@ -1,8 +1,8 @@
-# sysDATIQ – lokal testbare Grundanwendung
+# sysDATIQ – Kundenkataster und Zähleranlagenbaum (v0.2.0)
 
-Die erste Ausbaustufe der Energie- und Effizienzmanagementplattform aus deinem Masterprompt: eine echte Webanwendung mit React, ASP.NET Core 10 und PostgreSQL. Daten werden dauerhaft gespeichert. Der vollständige Masterprompt liegt in [docs/MASTERPROMPT.original.md](docs/MASTERPROMPT.original.md).
+Die technische Kunden- und Zählerverwaltung aus deinem Masterprompt: eine echte Webanwendung mit React, ASP.NET Core 10 und PostgreSQL. Daten werden dauerhaft gespeichert. Der vollständige Masterprompt liegt in [docs/MASTERPROMPT.original.md](docs/MASTERPROMPT.original.md).
 
-Ansichten der geprüften Anwendung: [Desktop](docs/screenshots/desktop.png) · [Smartphone](docs/screenshots/smartphone.png).
+Ansichten der geprüften Anwendung: [Kataster/Zähler Desktop](docs/screenshots/kataster-desktop.png) · [Kataster/Zähler Smartphone](docs/screenshots/kataster-smartphone.png).
 
 ## Lokal starten
 
@@ -27,8 +27,8 @@ Beim ersten Start werden Migrationen angewendet und genau einmal zwei synthetisc
 | --- | --- | --- |
 | Systemadministrator | `admin@sysdatiq.local` | Beide Demo-Kunden; Kunden-, Benutzerverwaltung und Audit-Protokoll |
 | Kundenadministrator A | `admin@nordwerk.example` | Nur Nordwerk; freigeschaltete Benutzerverwaltung |
-| Kundenbenutzer A | `ablesung@nordwerk.example` | Nur Stammdaten von Nordwerk; Zählererfassung folgt in Phase 2 |
-| Kundenleser B | `lesen@weserpark.example` | Nur Stammdaten von Weserpark |
+| Kundenbenutzer A | `ablesung@nordwerk.example` | Freigegebene Nordwerk-Anlagen, Messstellen und Ablesungen |
+| Kundenleser B | `lesen@weserpark.example` | Freigegebene Weserpark-Anlagen, Messstellen und Ablesungen; keine Schreibrechte |
 
 Das gemeinsame **lokale Startpasswort** lautet `Start_Energie`. Bei der ersten Anmeldung muss jeder Benutzer ein eigenes Passwort mit mindestens 12 Zeichen, Groß- und Kleinbuchstaben vergeben. Bis dahin sperrt auch die API die normalen Anwendungsfunktionen.
 
@@ -48,9 +48,38 @@ Passwort vergessen: auf der Anmeldeseite den Reset anfordern, Mailpit öffnen un
 
 Die Übersicht zählt echte Kunden und Benutzer aus der Datenbank. Es gibt keine erfundenen Messwerte oder Energiekennzahlen.
 
-## Umfang dieser Version
+## Kundenkataster und Zähleranlagenbaum
 
-Implementiert ist **Phase 1 – technisches Fundament**. Standort-/Gebäudeverwaltung, Messstellen, Zählerstände, Zählertausch, Bild-Uploads, Anlagenkataster, Fuhrpark, Energieanalysen, Tarife, Berichte, Maßnahmen, kaufmännische Vorgänge, Erinnerungen und KI folgen in weiteren Phasen. Dafür werden keine scheinbar funktionierenden Menüpunkte angezeigt. Azurite und Hintergrundaufträge werden mit den tatsächlich benötigten Datei- und Automatisierungsmodulen ergänzt.
+Zusätzlich zur Benutzer- und Kundenverwaltung enthält Version 0.2:
+
+- Kunden → Standorte → Gebäude → Bereiche/Anlagen, Verteilungen, Verbrauchergruppen und Einzelverbraucher.
+- Technische Standort- und Gebäudedaten mit Flächen, Nutzung, Betriebszeiten, Versorgungssystemen, Zeitzone und individuellen Zusatzfeldern.
+- Verbraucher mit Anzahl, Nenn- und Systemleistung, Jahresbetriebsstunden und Lastfaktor; elektrische Leistung und Jahresverbrauch werden ausdrücklich als **Schätzung** berechnet.
+- Einen getrennten, aufklappbaren Messstellenbaum mit Haupt- und Unterzählern für Strom, Wasser, Erdgas, Wärme und Kälte.
+- Messstellenstammdaten, physische Zählergeräte und getrennte Geräteperioden mit Faktor, Auflösung, Nachkommastellen und optionaler Überlaufgrenze.
+- Historisierte Zuordnungen im Anlagen-/Zählerbaum, Schutz gegen Kreise und Vermischung verschiedener Medien, Einheiten oder Messrichtungen.
+- Kundenportal mit manueller Zählerstandserfassung, Ereignissen, Kommentaren, Fotoaufnahme/Upload und Ablesehistorie.
+- Serverseitige Prüfung von Wertebereich, Genauigkeit, Auflösung, Reihenfolge, Duplikaten, Verbrauchsgrenzen und belastbaren historischen Vergleichswerten. Auffällige Werte benötigen ausdrückliche Bestätigung und Begründung.
+- Nachvollziehbare Korrekturen durch die Systemadministration und dokumentierter Zählertausch mit Alt-/Neustand. Fehlende Austauschwerte werden als unvollständig ausgewiesen.
+- Verbrauchsdifferenzen je Geräteperiode und Haupt-/Unterzählerbilanz für exakt übereinstimmende Zeiträume. Datenlücken ergeben keine scheinbar vollständige Bilanz.
+- Private Fotos/PDF-Dokumente am Kataster und private Ablesefotos im persistenten Azurite-Speicher. Bilder werden geprüft, verkleinert und von Metadaten bereinigt.
+- Standortfreigaben pro Benutzer. Eingeschränkte Kundenadministratoren können neuen Benutzern keine weitergehenden Standortrechte geben.
+- Dashboard mit echten Standort-/Messstellenzahlen, überfälligen Ablesungen und auffälligen Werten.
+
+Ein bebilderter Arbeitsablauf und die fachlichen Grenzen stehen in [docs/KATASTER.md](docs/KATASTER.md).
+
+**Noch nicht enthalten:** Fuhrpark, Versorgerrechnungen und Tarife, umfangreiche Diagrammkonfiguration, PDF-/Excel-Berichte, PDCA, kaufmännische Vorgänge, automatische Erinnerungen, Zeitreihenimporte und KI. Diese Module bleiben weitere Ausbaustufen des Masterprompts.
+
+## Vorhandene Installation aktualisieren
+
+Zuerst eine Datenbanksicherung erstellen (siehe unten). Im bestehenden Projektordner:
+
+```sh
+git pull origin main
+docker compose up --build -d --wait
+```
+
+Die neue Migration ergänzt die vorhandene Datenbank. Kunden, Benutzer, Passwörter und bisherige Daten bleiben erhalten. Das neue `blob_data`-Volume enthält private Dateien. **Kein `down -v` zum Aktualisieren verwenden.** Bestehende Installationen beginnen mit einem leeren technischen Kataster, das über die Oberfläche aufgebaut wird. Die umfangreiche Demo-Struktur wird ausschließlich bei einer neuen, leeren Demo-Datenbank erzeugt.
 
 Die lokale Testversion ist ausschließlich für Entwicklung freigegeben. Containerports für Web und Mailpit sind an `127.0.0.1` gebunden. Datenbank und Backend werden im normalen Compose-Betrieb nicht direkt am Host veröffentlicht. Ein anderer Computer oder ein echtes Smartphone kann daher nicht unmittelbar zugreifen; die Smartphone-Prüfung verwendet eine entsprechend kleine Browseransicht. Für einen späteren Netzwerk- oder Produktivbetrieb sind HTTPS, individuelle Einladungen, Secret Store, Betriebs- und Datenschutzkonzept sowie eine gesonderte Sicherheitsprüfung erforderlich. Die API verweigert den Start außerhalb der Development-Umgebung.
 
@@ -82,7 +111,7 @@ docker compose logs --tail=100 api  # Backend-Diagnose
 docker compose ps                  # Status
 ```
 
-PostgreSQL-Daten, Session-Schlüssel und Testpostfach liegen in benannten Docker-Volumes. **`docker compose down -v` löscht diese lokalen Daten einschließlich Benutzerpasswörtern.** Zum normalen Stoppen `-v` weglassen.
+PostgreSQL-Daten, private Dateien, Session-Schlüssel und Testpostfach liegen in benannten Docker-Volumes. **`docker compose down -v` löscht diese lokalen Daten einschließlich Benutzerpasswörtern.** Zum normalen Stoppen `-v` weglassen.
 
 Ein binär komprimiertes Datenbankbackup ohne plattformabhängige Umleitung erzeugen:
 
@@ -101,7 +130,7 @@ Die API-Tests prüfen echte HTTP-Anfragen und eine echte PostgreSQL-Datenbank. D
 bash scripts/test.sh
 ```
 
-Unter Windows dafür Git Bash oder WSL verwenden. Standard-Testports: 18080 und 18025; bei Bedarf `TEST_APP_PORT` und `TEST_MAIL_PORT` setzen. Die 16 Integrationstests decken Authentifizierung, Passwortwechsel, Reset-E-Mail, einmalige Reset-Links, Kontosperre, Mandantentrennung, Rollenrechte, CSRF, Eingabevalidierung, Duplikate, Historisierung, Konflikte, OpenAPI und Sitzungswiderruf ab. Anschließend prüft das Skript Datenpersistenz nach einem API-Neustart.
+Unter Windows dafür Git Bash oder WSL verwenden. Standard-Testports: 18080 und 18025; bei Bedarf `TEST_APP_PORT` und `TEST_MAIL_PORT` setzen. Die 36 Integrationstests decken Authentifizierung, Passwortwechsel, Reset-E-Mail, einmalige Reset-Links, Kontosperre, Mandantentrennung, Rollenrechte, CSRF, Eingabevalidierung, Duplikate, Historisierung, Konflikte, OpenAPI und Sitzungswiderruf sowie Kataster, Standortrechte, Gerätewechsel, Überläufe, Korrekturhistorie, Bilanzierung und echten privaten Foto-Upload ab. Anschließend prüft das Skript Datenpersistenz nach einem API-Neustart.
 
 Für Browserprüfungen sind Node.js 24 und Chromium/Playwright zusätzlich auf dem Testrechner erforderlich:
 
@@ -112,17 +141,18 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Die Browserprüfung verwendet den lokalen Systemadministrator. Auf einer frischen Demo-Datenbank setzt sie dessen Passwort auf `Browser_Energie_2026!`. Auf einer bereits verwendeten Datenbank vorher `E2E_ADMIN_PASSWORD` auf dessen aktuelles Passwort setzen. Die Tests erstellen gekennzeichnete Testkunden und sind deshalb für eine separate Testinstanz gedacht. `E2E_BASE_URL` überschreibt die Zieladresse. `CHROMIUM_PATH` erlaubt einen vorhandenen Chromium-Browser. Desktop (1440 × 960) und Smartphone (390 × 844) prüfen Anmeldung, Kundenanlage, Bearbeitung, Seitenbreite und Abmeldung.
+Die Browserprüfung verwendet den lokalen Systemadministrator. Auf einer frischen Demo-Datenbank setzt sie dessen Passwort auf `Browser_Energie_2026!`. Auf einer bereits verwendeten Datenbank vorher `E2E_ADMIN_PASSWORD` auf dessen aktuelles Passwort setzen. Die Tests erstellen gekennzeichnete Testkunden und sind deshalb für eine separate Testinstanz gedacht. `E2E_BASE_URL` überschreibt die Zieladresse. `CHROMIUM_PATH` erlaubt einen vorhandenen Chromium-Browser. Fünf Browserabläufe prüfen Desktop und Smartphone, Kundenanlage, Kataster/Verbraucherberechnung, Messstellenanlage, Ablesung mit Foto, Korrektur, Zählertausch, Seitenbreite und die Erstanmeldung eines Kundenbenutzers.
 
 ## Entwicklung ohne kompletten Container-Neubau
 
-Der dokumentierte Standard ist Docker Compose. Für Hot Reload können Backend und Frontend mit .NET SDK 10 und Node.js 24 nativ betrieben werden; PostgreSQL und Mailpit bleiben in Docker. Dazu lokale Portfreigaben nur auf Loopback konfigurieren und die Laufzeitwerte setzen:
+Der dokumentierte Standard ist Docker Compose. Für Hot Reload können Backend und Frontend mit .NET SDK 10 und Node.js 24 nativ betrieben werden; PostgreSQL und Mailpit bleiben in Docker. Zusätzlich muss Azurite mit privatem Blob-Speicher laufen. Dazu lokale Portfreigaben nur auf Loopback konfigurieren und die Laufzeitwerte setzen:
 
 - `ConnectionStrings__Database`: erreichbare lokale PostgreSQL-Verbindung.
 - `ASPNETCORE_ENVIRONMENT=Development`, `App__SeedDemo=true` für synthetische Demodaten.
 - `App__DataKeyPath`: beschreibbares lokales Schlüsselverzeichnis außerhalb des Quellcodes.
 - `Smtp__Host`, `Smtp__Port`: lokaler Mailpit-SMTP-Port.
 - `App__BaseUrl=http://localhost:5173` bei Vite.
+- `Storage__ConnectionString=UseDevelopmentStorage=true` für einen Azurite-Emulator am lokalen Standardport 10000.
 - Backend: `dotnet run --project backend --urls http://127.0.0.1:8080`.
 - Frontend: in `frontend` erst `npm ci`, dann `npm run dev`.
 

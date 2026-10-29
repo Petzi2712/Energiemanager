@@ -83,7 +83,7 @@ public class PasswordReset
     public bool Used { get; set; }
 }
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public partial class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<Customer> Customers => Set<Customer>();
@@ -93,6 +93,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder b)
     {
+        ConfigureTechnical(b);
         b.Entity<AppUser>().HasIndex(x => x.NormalizedEmail).IsUnique();
         b.Entity<AppUser>().Property(x => x.Email).HasMaxLength(254);
         b.Entity<AppUser>().Property(x => x.NormalizedEmail).HasMaxLength(254);

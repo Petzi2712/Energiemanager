@@ -18,8 +18,8 @@ export async function api<T>(path: string, method = 'GET', body?: unknown): Prom
   }
   const r = await fetch(`/api${path}`, {
     method, credentials: 'same-origin',
-    headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(method !== 'GET' ? { 'X-CSRF-TOKEN': csrf! } : {}) },
-    ...(body ? { body: JSON.stringify(body) } : {}),
+    headers: { ...(body && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}), ...(method !== 'GET' ? { 'X-CSRF-TOKEN': csrf! } : {}) },
+    ...(body ? { body: body instanceof FormData ? body : JSON.stringify(body) } : {}),
   });
   const data = await r.json().catch(() => null);
   if (!r.ok) {
