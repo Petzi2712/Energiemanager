@@ -817,6 +817,10 @@ namespace Energy.Api.Migrations
                         .HasPrecision(24, 6)
                         .HasColumnType("numeric(24,6)");
 
+                    b.Property<decimal>("SavingsPercent")
+                        .HasPrecision(24, 6)
+                        .HasColumnType("numeric(24,6)");
+
                     b.Property<string>("ShiftModel")
                         .IsRequired()
                         .HasColumnType("text");

@@ -1,10 +1,18 @@
 # Architektur und erster Entwicklungsabschnitt
 
+## Ergänzung: Komponenten, CSV/XLSM und Historienseiten v0.5
+
+`SavingsPercent` wird je Katastereintrag mit 0 vorbelegt. Der Sammel-Endpunkt prüft Rolle, Kunde, Standort, Version und Prozentbereich in einer Transaktion. Kopieren erzeugt neue IDs in einer Transaktion, validiert die Zielhierarchie und entfernt Messstellenverweise; Dateien bleiben am Original. Die fünfte Migration ergänzt ausschließlich die Prozent-Spalte.
+
+Der Messstellendetail-Endpunkt paginiert serverseitig mit 15 Zeilen und optionalen UTC-Datumsgrenzen. Die jeweilige Verbrauchsdifferenz nutzt den berechtigten Vorgänger derselben Geräteperiode unabhängig von Filter und Seite. Nachweise und Revisionen werden nur für die aktuelle Seite geladen.
+
+`MeterCsv` liest UTF-8, UTF-16 und Latin-1 mit Semikolon, Komma oder Tabulator. Signierte CSV-Vorlagen verwenden dieselbe Data-Protection-Bindung wie XLSX. Eigene CSVs benötigen eine explizite Messstellenwahl oder ID-Spalte; der Server prüft Kunde, Standortperiode, Gerät und Einheit. XLSM wird in einer temporären Paketkopie ohne VBA-Teile als Wertetabelle gelesen. Kein VBA wird ausgeführt. Alle Formate durchlaufen denselben Vorschau-/Versionsschutz und die gemeinsame atomare Importprüfung.
+
 ## Ergänzung: theoretische Jahresbilanz und XLSX v0.4
 
 `TechnicalNode` erhält eine optionale Jahresmenge sowie Medium/Einheit. `TheoreticalBalance` bildet Gebäude-/Standortbilanzen aus aktiven Teilbäumen. Ein expliziter Gesamtansatz ersetzt gleichartige untergeordnete Ansätze. MWh werden normalisiert; Medien, Volumina und Energierollen bleiben getrennt. Fehlende Werte werden benannt. Die Oberfläche zeigt Kreis-, Ring- oder Balkendiagramme und Datenquellen; Einsparszenarien sind ausdrücklich angenommene Prozentsätze.
 
-`MeterExcel` erzeugt geschützte XLSX-Dateien über ClosedXML 0.105.0. Nur Datums-/Zählerstandszellen sind entsperrt. Eine Data-Protection-Bindung authentifiziert feste Felder, Kunde, Messstelle, Installation und Zeitzone. Die sichtbaren Nummern sind keine Import-Schlüssel. ZIPs werden im Speicher entpackt und begrenzt; Makros, externe Verknüpfungen, Formeln, veränderte Vorlagenfelder und fremde Eingabebereiche werden abgewiesen.
+`MeterExcel` erzeugt geschützte XLSX-Dateien über ClosedXML 0.105.0. Nur Datums-/Zählerstandszellen sind entsperrt. Eine Data-Protection-Bindung authentifiziert feste Felder, Kunde, Messstelle, Installation und Zeitzone. Die sichtbaren Nummern sind keine Import-Schlüssel. ZIPs werden im Speicher entpackt und begrenzt; Makros in XLSX, externe Verknüpfungen, Formeln, veränderte Vorlagenfelder und fremde Eingabebereiche werden abgewiesen.
 
 Die Importvorschau schreibt keine Ablesungen. Sie prüft alle Kandidaten gegen die gemeinsame zeitliche Reihe aus vorhandenen und neuen Ständen. Ein an Benutzer, Datei-Hashes und Messstellenversionen gebundenes Vorschautoken gilt 30 Minuten. Die Übernahme prüft erneut und speichert alle gültigen Ablesungen in einer serialisierbaren Transaktion. Fehler verhindern den ganzen Stapel; identische Wiederholungen werden übersprungen. Es gibt keine implizite Überschreibung vorhandener Werte. Datei-/Zeilenbezug und Benutzer werden auditiert.
 

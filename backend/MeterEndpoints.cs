@@ -65,22 +65,31 @@ public static class MeterEndpoints
             Security.Audit(db, c, "Messstelle.Umgehängt", id.ToString(), p.CustomerId, JsonSerializer.Serialize(new { before = old, after = assignment }));
             await db.SaveChangesAsync(); await tx.CommitAsync(); return Results.Ok(assignment);
         });
-        group.MapGet("/{id:guid}", async (Guid id, AppDbContext db, HttpContext c) =>
+        group.MapGet("/{id:guid}", async (Guid id, AppDbContext db, HttpContext c, DateTimeOffset? from, DateTimeOffset? to, int? page) =>
         {
             var p = await Point(db, c, id); var sites = await Sites(db, c, p.CustomerId);
             var assignments = await db.Assignments.Where(x => x.PointId == id && sites.Contains(x.SiteId)).OrderBy(x => x.ValidFrom).ToListAsync();
             var installations = await db.Installations.Where(x => x.PointId == id && db.Assignments.Any(a => a.PointId == id && sites.Contains(a.SiteId) && (x.ValidTo == null || a.ValidFrom <= x.ValidTo) && (a.ValidTo == null || a.ValidTo >= x.ValidFrom))).OrderBy(x => x.ValidFrom).ToListAsync();
             var devices = await db.Devices.Where(x => installations.Select(i => i.DeviceId).Contains(x.Id)).ToListAsync();
-            var rows = await VisibleReadings(db, id, sites).OrderByDescending(x => x.At).ThenByDescending(x => x.CreatedAt).Take(500).ToListAsync();
-            var ordered = rows.OrderBy(x => x.At).ThenBy(x => x.CreatedAt).ToList();
-            var result = rows.Select(r => { var previous = ordered.LastOrDefault(x => x.InstallationId == r.InstallationId && x.At < r.At); return new { reading = r, consumption = previous == null ? (decimal?)null : Delta(previous, r, installations.Single(i => i.Id == r.InstallationId)) }; });
+            Require(!from.HasValue || !to.HasValue || from <= to, "Der Beginn des Zeitraums muss vor dem Ende liegen.");
+            var visible = VisibleReadings(db, id, sites);
+            var query = visible;
+            if (from.HasValue) { var start = from.Value.ToUniversalTime(); query = query.Where(x => x.At >= start); }
+            if (to.HasValue) { var end = to.Value.ToUniversalTime(); query = query.Where(x => x.At <= end); }
+            var total = await query.CountAsync(); const int pageSize = 15;
+            var totalPages = Math.Max(1, (total + pageSize - 1) / pageSize); var currentPage = Math.Clamp(page ?? 1, 1, totalPages);
+            var pairs = await query.OrderByDescending(x => x.At).ThenByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id)
+                .Skip((currentPage - 1) * pageSize).Take(pageSize)
+                .Select(r => new { reading = r, previous = visible.Where(x => x.InstallationId == r.InstallationId && x.At < r.At).OrderByDescending(x => x.At).FirstOrDefault() }).ToListAsync();
+            var rows = pairs.Select(x => x.reading).ToList();
+            var result = pairs.Select(x => new { x.reading, consumption = x.previous == null ? (decimal?)null : Delta(x.previous, x.reading, installations.Single(i => i.Id == x.reading.InstallationId)) });
             var revisions = await db.ReadingRevisions.Where(x => rows.Select(r => r.Id).Contains(x.ReadingId)).OrderByDescending(x => x.At).ToListAsync();
             var replacements = await db.Replacements.Where(x => x.PointId == id && db.Assignments.Any(a => a.PointId == id && sites.Contains(a.SiteId) && a.ValidFrom <= x.At && (a.ValidTo == null || x.At < a.ValidTo))).ToListAsync();
             var documents = await db.Documents.Where(x => x.ReadingId != null && rows.Select(r => r.Id).Contains(x.ReadingId.Value)).Select(x => new { x.Id, x.ReadingId, x.Name, x.ContentType }).ToListAsync();
             foreach (var replacement in replacements)
                 replacement.IsIncomplete = !await db.Readings.AnyAsync(x => x.InstallationId == replacement.OldInstallationId && x.At == replacement.At) || !await db.Readings.AnyAsync(x => x.InstallationId == replacement.NewInstallationId && x.At == replacement.At);
             Security.Audit(db, c, "Messstelle.Gelesen", id.ToString(), p.CustomerId); await db.SaveChangesAsync();
-            return Results.Ok(new { point = p, assignments, installations, devices, readings = result, revisions, replacements, documents });
+            return Results.Ok(new { point = p, assignments, installations, devices, readings = result, revisions, replacements, documents, paging = new { page = currentPage, pageSize, total, totalPages } });
         });
         group.MapPost("/{id:guid}/readings", async (Guid id, ReadingInput input, AppDbContext db, HttpContext c) =>
         {

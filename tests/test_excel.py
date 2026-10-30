@@ -57,13 +57,13 @@ class ExcelIntegration(unittest.TestCase):
     def template(self,p):
         with self.admin.open.open(BASE+'/api/meters/'+p['id']+'/excel', timeout=30) as r:
             self.assertIn('spreadsheetml',r.headers['Content-Type']); return r.read()
-    def upload(self, files, preview=None, confirm=False, reason='', client=None):
+    def upload(self, files, preview=None, confirm=False, reason='', client=None, csvPointId=None):
         client = client or self.admin
         if client.csrf is None: client.csrf=client.req('/api/auth/csrf')[1]['token']
         boundary='upload-'+uuid.uuid4().hex; parts=[]
         for name,data in files:
             parts.append(('--'+boundary+'\r\nContent-Disposition: form-data; name="files"; filename="'+name+'"\r\nContent-Type: application/octet-stream\r\n\r\n').encode()+data+b'\r\n')
-        for name,value in [('previewToken',preview or ''),('confirmWarnings',str(confirm).lower()),('reason',reason)]:
+        for name,value in [('previewToken',preview or ''),('confirmWarnings',str(confirm).lower()),('reason',reason),('csvPointId',csvPointId or '')]:
             parts.append(('--'+boundary+'\r\nContent-Disposition: form-data; name="'+name+'"\r\n\r\n'+value+'\r\n').encode())
         body=b''.join(parts)+('--'+boundary+'--\r\n').encode()
         path='/api/meter-excel/'+('import' if preview is not None else 'preview')+'?customerId='+self.a['id']

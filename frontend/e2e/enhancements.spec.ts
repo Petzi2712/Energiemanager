@@ -146,7 +146,7 @@ for (const width of [1440, 390]) {
     await page
       .getByLabel("Strukturtyp", { exact: true })
       .selectOption("ConsumerAsset");
-    await page.getByLabel("Nummer *", { exact: true }).fill("PV-" + suffix);
+    await page.getByLabel("ID *", { exact: true }).fill("PV-" + suffix);
     await page
       .getByLabel("Bezeichnung *", { exact: true })
       .fill("UI Photovoltaik " + suffix);

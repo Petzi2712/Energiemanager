@@ -1,4 +1,4 @@
-# sysDATIQ – Anlagen, Zähler und Fuhrpark (v0.4.0)
+# sysDATIQ – Anlagen, Zähler und Fuhrpark (v0.5.0)
 
 Die technische Kunden- und Zählerverwaltung aus deinem Masterprompt: eine echte Webanwendung mit React, ASP.NET Core 10 und PostgreSQL. Daten werden dauerhaft gespeichert. Der vollständige Masterprompt liegt in [docs/MASTERPROMPT.original.md](docs/MASTERPROMPT.original.md).
 
@@ -50,16 +50,17 @@ Die Übersicht zählt echte Kunden und Benutzer aus der Datenbank. Es gibt keine
 
 ## Kundenkataster und Zähleranlagenbaum
 
-Zusätzlich zur Benutzer- und Kundenverwaltung enthält Version 0.4:
+Zusätzlich zur Benutzer- und Kundenverwaltung enthält Version 0.5:
 
 - Kunden → Standorte → Gebäude → Bereiche/Anlagen, Verteilungen, Verbrauchergruppen und Einzelverbraucher.
+- Kataster-Untereinträge einzeln oder samt Teilbaum kopieren, mit eigenen IDs und unabhängig bearbeitbaren Stammdaten. Zähler- und Dateiverweise verbleiben am Original. Die Eingabefelder heißen „ID“ und „ID Messstelle“.
 - Technische Standort- und Gebäudedaten mit Flächen, Nutzung, Betriebszeiten, Versorgungssystemen, Zeitzone und individuellen Zusatzfeldern.
 - Hardware für Beleuchtung, Maschinen, Anlagen, Wärme, EDV/Server und Erzeugungsanlagen (BHKW, PV, Wind usw.) mit Energierolle Verbraucher/Erzeuger/beides, freien Kategorien, Energieträgern und Zusatzfeldern.
 - Verbraucher und Erzeuger mit Anzahl, Nenn- und Systemleistung, Jahresbetriebsstunden und Lastfaktor; elektrische Leistung und Jahresverbrauch werden ausdrücklich als **Schätzung** berechnet.
 - Einen getrennten, aufklappbaren Messstellenbaum mit Haupt- und Unterzählern für Strom, Wasser, Erdgas, Wärme und Kälte.
 - Messstellenstammdaten, physische Zählergeräte und getrennte Geräteperioden mit Faktor, Auflösung, Nachkommastellen und optionaler Überlaufgrenze.
 - Historisierte Zuordnungen im Anlagen-/Zählerbaum, Schutz gegen Kreise und Vermischung verschiedener Medien, Einheiten oder Messrichtungen.
-- Kundenportal mit manueller Zählerstandserfassung, Ereignissen, Kommentaren, Fotoaufnahme/Upload und Ablesehistorie.
+- Kundenportal mit manueller Zählerstandserfassung, Ereignissen, Kommentaren und Fotoaufnahme/Upload. Kompakte Ablesehistorie mit höchstens 15 Zeilen je Seite und frei wählbaren Datumsgrenzen; Nachweise erscheinen beim Aufklappen.
 - Serverseitige Prüfung von Wertebereich, Genauigkeit, Auflösung, Reihenfolge, Duplikaten und ausdrücklich konfigurierten Tagesgrenzen. Die automatische Medianwarnung ist entfernt. Ohne gesetzte Tagesgrenze gibt es keine Verbrauchsspitzenwarnung. Überläufe und fachlich ungültige Stände werden weiterhin gesondert geprüft.
 - Nachvollziehbare Korrekturen durch die Systemadministration und dokumentierter Zählertausch mit Alt-/Neustand. Fehlende Austauschwerte werden als unvollständig ausgewiesen.
 - Automatische Verbrauchsansicht für die letzten 30 Tage mit Balkendiagramm. Tage, Wochen, Monate, Jahre und Gesamtzeitraum sind wählbar; Anfang und Ende frei einstellbar. Zeitanteilige Werte und Datenlücken werden ausdrücklich gekennzeichnet. Historische Zuordnungen, Gerätewechsel und Faktoren werden berücksichtigt.
@@ -71,7 +72,9 @@ Zusätzlich zur Benutzer- und Kundenverwaltung enthält Version 0.4:
 - Logo und Login-Leitspruch unter „Mein Konto“ durch die Systemadministration ändern; kein Neubau dafür erforderlich. Gespeicherter Darkmodus pro Benutzer.
 - Fixierte Kopfzeile mit Benutzer und zentraler Kundenauswahl auf allen Seiten. Im Kundenkataster erscheinen keine Zählerlisten oder Zählerformulare.
 - Theoretische Jahresbilanz pro Gebäude/Standort aus vorgegebenen Jahresmengen oder Leistung × Betriebsstunden × Lastfaktor. Kreis-, Ring- und Balkendiagramm sind umschaltbar. Unterschiedliche Medien/Einheiten, Erzeugung und unbekannte Werte bleiben getrennt.
+- Einsparszenarien mit auswählbaren Komponenten und einzeln gespeicherten Prozentannahmen je Verbraucher; optionales Diagramm nach Einsparung.
 - Geschützte Excel-Vorlagen pro Zähler: nur Datum und Zählerstand bearbeitbar; bis zu 500 Ablesungen je Vorlage. Einzel- und ZIP-Sammeldownload, Mehrdatei-/ZIP-Upload mit Vorschau und atomarem Import, unveränderliche signierte Zählerzuordnung sowie Duplikat- und Konfliktprüfung.
+- Import von XLSX, XLSM und CSV, auch gemischt im ZIP. XLSM-Makros werden nicht ausgeführt. CSV-Download mit signierter Zählerzuordnung oder Import eigener CSV mit ausdrücklich gewählter Messstelle bzw. ID-Spalte.
 - Standortfreigaben pro Benutzer. Eingeschränkte Kundenadministratoren können neuen Benutzern keine weitergehenden Standortrechte geben.
 - Dashboard mit echten Standort-/Messstellenzahlen, überfälligen Ablesungen und auffälligen Werten.
 
@@ -90,7 +93,7 @@ docker compose -p sysdatiq up --build --force-recreate -d --wait
 
 Falls du bisher ZIP-Dateien verwendest: Die neuen Quelldateien in **denselben Projektordner** übernehmen; die bestehende `.env` behalten und anschließend denselben Compose-Befehl ausführen. In der `.env` bleiben `COMPOSE_PROJECT_NAME=sysdatiq`, `APP_PORT=8080` und die bisherigen Datenbankwerte erhalten. Der Projektname muss der bestehenden Installation entsprechen; er bestimmt die verwendeten Volumes.
 
-Danach den Browser mit `Strg+F5` neu laden. `/api/health` liefert `phase: 4` und `version: "0.4.0"`.
+Danach den Browser mit `Strg+F5` neu laden. `/api/health` liefert `phase: 5` und `version: "0.5.0"`.
 
 Die neue Migration ergänzt die vorhandene Datenbank. Kunden, Benutzer, Passwörter und bisherige Daten bleiben erhalten. Das persistente `blob_data`-Volume enthält private Dateien. **Kein `down -v` zum Aktualisieren verwenden.** Bereits vorhandene Kataster- und Messdaten werden übernommen. Ein Upgrade aus Phase 1 beginnt mit einem leeren technischen Kataster, das über die Oberfläche aufgebaut wird. Die umfangreiche Demo-Struktur wird ausschließlich bei einer neuen, leeren Demo-Datenbank erzeugt.
 
@@ -145,7 +148,7 @@ Die API-Tests prüfen echte HTTP-Anfragen und eine echte PostgreSQL-Datenbank. D
 bash scripts/test.sh
 ```
 
-Unter Windows dafür Git Bash oder WSL verwenden. Standard-Testports: 18080 und 18025; bei Bedarf `TEST_APP_PORT` und `TEST_MAIL_PORT` setzen. Die 72 Integrationstests decken Authentifizierung, Passwortwechsel, Reset-E-Mail, einmalige Reset-Links, Kontosperre, Mandantentrennung, Rollenrechte, CSRF, Eingabevalidierung, Duplikate, Historisierung, Konflikte, OpenAPI und Sitzungswiderruf sowie Kataster, Standortrechte, Gerätewechsel, Überläufe, Korrekturhistorie, Bilanzierung und echten privaten Foto-Upload sowie Branding, Logo, Darkmodus, Fuhrpark, Löschrechte/-protokolle und zeitanteilige Verbrauchsreihen ab. Auch Zeitumstellungen, historische Standortfreigaben, die Bilanz gelöschter Unterzähler, theoretische Jahresmengen, geschützte XLSX-Dateien, ZIP-Importe, Manipulationsschutz, atomare Stapel und normale Kundenbenutzer werden geprüft. Anschließend prüft das Skript Datenpersistenz nach einem API-Neustart.
+Unter Windows dafür Git Bash oder WSL verwenden. Standard-Testports: 18080 und 18025; bei Bedarf `TEST_APP_PORT` und `TEST_MAIL_PORT` setzen. Die 82 Integrationstests decken Authentifizierung, Passwortwechsel, Reset-E-Mail, einmalige Reset-Links, Kontosperre, Mandantentrennung, Rollenrechte, CSRF, Eingabevalidierung, Duplikate, Historisierung, Konflikte, OpenAPI und Sitzungswiderruf sowie Kataster, Standortrechte, Gerätewechsel, Überläufe, Korrekturhistorie, Bilanzierung und echten privaten Foto-Upload sowie Branding, Logo, Darkmodus, Fuhrpark, Löschrechte/-protokolle und zeitanteilige Verbrauchsreihen ab. Auch Zeitumstellungen, historische Standortfreigaben, die Bilanz gelöschter Unterzähler, theoretische Jahresmengen, geschützte XLSX-Dateien, ZIP-Importe, Manipulationsschutz, atomare Stapel und normale Kundenbenutzer werden geprüft. Die Version-0.5-Prüfungen ergänzen XLSM, CSV-Zuordnung und Zeichensätze, komponentenweise Einsparannahmen, Teilbaumkopien, Konflikte und Historienseiten mit Randverbrauch. Anschließend prüft das Skript Datenpersistenz nach einem API-Neustart.
 
 Für Browserprüfungen sind Node.js 24, Python 3 (Standardbibliothek für XLSX-Testdaten) und Chromium/Playwright zusätzlich auf dem Testrechner erforderlich:
 
@@ -156,7 +159,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Die Browserprüfung verwendet den lokalen Systemadministrator. Vor dem gemeinsamen Browserlauf dessen Erstanmeldung in einer separaten Testinstanz abschließen und `E2E_ADMIN_PASSWORD` auf das gewählte Passwort setzen. Auf einer Testinstanz nach dem API-Testlauf lautet es `Test_Energie_2026!`. `E2E_ADMIN_PASSWORD` für den gemeinsamen Lauf immer ausdrücklich setzen. Die Tests erstellen gekennzeichnete Testkunden und sind deshalb für eine separate Testinstanz gedacht. `E2E_BASE_URL` überschreibt die Zieladresse. `CHROMIUM_PATH` erlaubt einen vorhandenen Chromium-Browser; `PYTHON_PATH` kann bei Bedarf den Python-Befehl für XLSX-Testdaten wählen (unter Windows beispielsweise `python`). Neun Browserabläufe prüfen Desktop und Smartphone, Kundenanlage, Kataster/Verbraucherberechnung, Messstellenanlage, Ablesung mit Foto, Korrektur, Zählertausch, Seitenbreite und die Erstanmeldung eines Kundenbenutzers. Die neuen Abläufe prüfen außerdem Branding am Login, Darkmodus nach Neuladen, Hardware/Erzeuger, Fuhrpark, Bild- und Zählerlöschen, automatische Balken, Drag-and-drop und die fixierte Kopfzeile. Die neuen Jahresbilanz-/Excel-Abläufe wechseln Diagrammtypen, erfassen Jahresmengen und laden echte XLSX-/ZIP-Dateien herunter, füllen Ablesungen ein und importieren sie über die Oberfläche.
+Die Browserprüfung verwendet den lokalen Systemadministrator. Vor dem gemeinsamen Browserlauf dessen Erstanmeldung in einer separaten Testinstanz abschließen und `E2E_ADMIN_PASSWORD` auf das gewählte Passwort setzen. Auf einer Testinstanz nach dem API-Testlauf lautet es `Test_Energie_2026!`. `E2E_ADMIN_PASSWORD` für den gemeinsamen Lauf immer ausdrücklich setzen. Die Tests erstellen gekennzeichnete Testkunden und sind deshalb für eine separate Testinstanz gedacht. `E2E_BASE_URL` überschreibt die Zieladresse. `CHROMIUM_PATH` erlaubt einen vorhandenen Chromium-Browser; `PYTHON_PATH` kann bei Bedarf den Python-Befehl für XLSX-Testdaten wählen (unter Windows beispielsweise `python`). Elf Browserabläufe prüfen Desktop und Smartphone, Kundenanlage, Kataster/Verbraucherberechnung, Messstellenanlage, Ablesung mit Foto, Korrektur, Zählertausch, Seitenbreite und die Erstanmeldung eines Kundenbenutzers. Die neuen Abläufe prüfen außerdem Branding am Login, Darkmodus nach Neuladen, Hardware/Erzeuger, Fuhrpark, Bild- und Zählerlöschen, automatische Balken, Drag-and-drop und die fixierte Kopfzeile. Die neuen Jahresbilanz-/Excel-Abläufe wechseln Diagrammtypen, erfassen Jahresmengen und laden echte XLSX-/ZIP-Dateien herunter, füllen Ablesungen ein und importieren sie über die Oberfläche. Zwei weitere Abläufe prüfen Komponentenwahl und gespeicherte Prozentwerte, Teilbaumkopie, die kompakten Historienseiten, frei gewählte Historienzeiträume, CSV-Import und die richtige Reihenfolge der letzten 30 Tage in Europe/Berlin.
 
 ## Entwicklung ohne kompletten Container-Neubau
 

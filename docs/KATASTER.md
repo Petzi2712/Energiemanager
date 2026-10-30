@@ -1,4 +1,4 @@
-# Kundenkataster und Zähleranlagenbaum – Version 0.4
+# Kundenkataster und Zähleranlagenbaum – Version 0.5
 
 ## Einen Kunden technisch aufnehmen
 
@@ -36,7 +36,7 @@ Geprüft werden Wertebereich, maximal sechs Dezimalstellen, konfigurierte Auflö
 
 Fallende Stände werden grundsätzlich abgelehnt. Ein Überlauf benötigt einen konfigurierten Überlaufmodulus, die explizite Überlaufmarkierung und eine bestätigte Begründung. Der Modulus ist der Wert, bei dem das Register auf null springt, beispielsweise 100.000 bei einem Register von 0 bis 99.999. Überläufe werden nie automatisch als Tatsache unterstellt.
 
-Der Verbrauch wird aus aufeinanderfolgenden Ständen desselben Geräts mit dessen Faktor berechnet. Erste Stände einer Geräteperiode besitzen keine Verbrauchsdifferenz. Die Historie liefert bis zu 500 aktuelle Ablesungen. Die Bilanzberechnung verwendet die vollständigen für den Zeitraum erforderlichen Daten unabhängig von dieser Anzeigegrenze.
+Der Verbrauch wird aus aufeinanderfolgenden Ständen desselben Geräts mit dessen Faktor berechnet. Erste Stände einer Geräteperiode besitzen keine Verbrauchsdifferenz. Die kompakte Historie zeigt höchstens 15 Ablesungen je Seite, mit Vor-/Zurückblättern und frei wählbaren Datumsgrenzen in Browser-Ortszeit. Die Endsekunde wird vollständig einbezogen. Nachweise, Kommentare und Korrekturen erscheinen beim Aufklappen einer Zeile. Der Verbrauch am Seiten-/Filterrand nutzt den vorherigen berechtigten Stand außerhalb der angezeigten Seite. Die Bilanzberechnung verwendet weiterhin alle erforderlichen Daten.
 
 Fotos werden anhand des tatsächlichen Dateiformats decodiert. Nur JPEG und PNG bis 24 Megapixel werden angenommen, ausgerichtet, auf höchstens 2.000 × 2.000 Pixel verkleinert, von Metadaten bereinigt und als JPEG in einen privaten Blob-Container geschrieben. Der Zugriff läuft mit Benutzer-/Standortprüfung durch die API. Es gibt keine öffentlichen Blob-URLs. Ein fehlgeschlagenes Foto ändert eine bereits gespeicherte Ablesung nicht; der Nachweis kann über deren Historieneintrag ergänzt werden.
 
@@ -95,3 +95,9 @@ Der Server prüft Kunde, Standort, Medium, Einheit, Messrichtung und Kreisfreihe
 
 
 Ab Version 0.4 sind die theoretische Gebäude-/Standortbilanz und geschützte Excel-Ablesevorlagen ergänzt. Siehe [Bilanz und Excel](BILANZ-UND-EXCEL.md).
+
+## Kopieren und IDs ab Version 0.5
+
+Als Systemadministrator einen Untereintrag auswählen und „Eintrag kopieren“ öffnen. Ziel, neue ID und Bezeichnung bestimmen; wahlweise alle Untereinträge übernehmen. Die Kopie erhält neue interne Kennungen und eindeutige IDs für die Untereinträge. Technische Werte, Zusatzfelder, Aktivzustand und Einsparannahmen werden übernommen. Dokumente, Ablesungen und Messstellenzuordnungen verbleiben am Original. Kopien sind unabhängig bearbeitbar; die Aktion wird protokolliert. Standorte selbst werden nicht kopiert.
+
+Das Katasterfeld „Nummer“ heißt jetzt „ID“, die „Messstellennummer“ heißt „ID Messstelle“. Bestehende Werte und Verknüpfungen bleiben erhalten. Im Modul „Verbrauch und Unterzählerbilanz“ liegt der Beginn standardmäßig 30 Tage vor dem Ende; getrennte Feldnamen und ausgeschaltetes Autovervollständigen vermeiden Verwechslungen mit den Historienfiltern.

@@ -24,6 +24,7 @@ export type Node = {
   assetType: string;
   assetRole: string;
   annualEnergyValue: number | null;
+  savingsPercent: number;
   annualEnergyUnit: string;
   annualEnergyMedium: string;
   manufacturer: string;
@@ -137,6 +138,7 @@ export type Detail = {
     isIncomplete: boolean;
   }[];
   documents: Document[];
+  paging: { page: number; pageSize: number; total: number; totalPages: number };
 };
 export const kinds: Record<string, string> = {
   Site: 'Standort',
@@ -205,6 +207,7 @@ export const emptyNode: Omit<Node, 'id' | 'customerId'> = {
   assetType: '',
   assetRole: 'Consumption',
   annualEnergyValue: null,
+  savingsPercent: 0,
   annualEnergyUnit: 'kWh',
   annualEnergyMedium: 'Electricity',
   manufacturer: '',

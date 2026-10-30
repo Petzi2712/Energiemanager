@@ -15,6 +15,7 @@ import { MeterPanel, Documents } from "./readings";
 import "./technical.css";
 import { TheoreticalBalance } from "./TheoreticalBalance";
 import { ExcelTools } from "./ExcelTools";
+import { CopyNode } from "./CopyNode";
 
 export function TechnicalStudio({
   session,
@@ -34,6 +35,7 @@ export function TechnicalStudio({
     id: string;
   } | null>(null);
   const [search, setSearch] = useState("");
+  const [copying, setCopying] = useState<NodeView["node"] | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{
     id: string;
@@ -337,6 +339,11 @@ export function TechnicalStudio({
                       >
                         Stammdaten bearbeiten
                       </button>
+                      {node.node.kind !== "Site" && (
+                        <button onClick={() => setCopying(node.node)}>
+                          Eintrag kopieren
+                        </button>
+                      )}
                       {node.node.kind !== "ConsumerAsset" && (
                         <button
                           onClick={() =>
@@ -364,6 +371,7 @@ export function TechnicalStudio({
                       key={node.node.id}
                       customerId={customer}
                       nodeId={node.node.id}
+                      canEdit={admin}
                       version={tree.nodes
                         .map((n) => `${n.node.id}:${n.node.version}`)
                         .join(",")}
@@ -458,6 +466,18 @@ export function TechnicalStudio({
             setSelected({ type: "point", id: dropTarget.id });
             setDropTarget(null);
             await refresh();
+          }}
+        />
+      )}
+      {copying && (
+        <CopyNode
+          source={copying}
+          tree={tree}
+          onClose={() => setCopying(null)}
+          onSaved={async (id) => {
+            setCopying(null);
+            await refresh();
+            setSelected({ type: "node", id });
           }}
         />
       )}

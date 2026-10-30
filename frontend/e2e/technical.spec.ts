@@ -36,7 +36,7 @@ for (const width of [1440, 390]) {
     await page
       .getByRole('button', { name: '+ Standort anlegen', exact: true })
       .click();
-    await page.getByLabel('Nummer *', { exact: true }).fill('UI-S-' + suffix);
+    await page.getByLabel('ID *', { exact: true }).fill('UI-S-' + suffix);
     await page
       .getByLabel('Bezeichnung *', { exact: true })
       .fill('UI Standort ' + suffix);
@@ -50,7 +50,7 @@ for (const width of [1440, 390]) {
     await page
       .getByRole('button', { name: '+ Untereintrag anlegen', exact: true })
       .click();
-    await page.getByLabel('Nummer *', { exact: true }).fill('UI-B-' + suffix);
+    await page.getByLabel('ID *', { exact: true }).fill('UI-B-' + suffix);
     await page
       .getByLabel('Bezeichnung *', { exact: true })
       .fill('UI Halle ' + suffix);
@@ -64,7 +64,7 @@ for (const width of [1440, 390]) {
     await page
       .getByLabel('Strukturtyp', { exact: true })
       .selectOption('ConsumerAsset');
-    await page.getByLabel('Nummer *', { exact: true }).fill('UI-V-' + suffix);
+    await page.getByLabel('ID *', { exact: true }).fill('UI-V-' + suffix);
     await page
       .getByLabel('Bezeichnung *', { exact: true })
       .fill('UI Beleuchtung ' + suffix);
@@ -86,7 +86,7 @@ for (const width of [1440, 390]) {
     await page.getByRole('button', { name: '+ Messstelle anlegen', exact: true }).click();
     await page.getByLabel('Zuordnung im Anlagenkataster', { exact: true }).selectOption({ label: 'Hardware / Verbraucher / Erzeuger · UI Beleuchtung ' + suffix });
     await page
-      .getByLabel('Messstellennummer *', { exact: true })
+      .getByLabel('ID Messstelle *', { exact: true })
       .fill('UI-M-' + suffix);
     await page
       .getByLabel('Messstellenbezeichnung *', { exact: true })
@@ -120,10 +120,9 @@ for (const width of [1440, 390]) {
     await expect(
       row.getByRole('cell', { name: '40 kWh', exact: true }),
     ).toBeVisible();
-    await expect(
-      page.getByRole('img', { name: 'meter.jpg', exact: true }),
-    ).toBeVisible();
-    await row.getByRole('button', { name: 'Korrigieren', exact: true }).click();
+    await row.getByRole('button', { name: /Ablesedetails/ }).click();
+    await expect(page.getByRole('img', { name: 'meter.jpg', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Korrigieren', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Zählerstand (kWh) *', { exact: true }).fill('125');
     await dialog

@@ -5,10 +5,33 @@ using static Energy.TechnicalAccess;
 namespace Energy;
 public static class TechnicalEndpoints
 {
+    public record CopyInput(Guid ParentId, string Number, string Name, bool IncludeChildren, int Version);
     public static readonly string[] Kinds = ["Site", "Building", "Area", "Distribution", "ConsumerGroup", "ConsumerAsset"];
     public static void Map(RouteGroupBuilder api)
     {
         var group = api.MapGroup("/technical/{customerId:guid}").RequireAuthorization();
+        group.MapPost("/nodes/{id:guid}/copy", async (Guid customerId, Guid id, CopyInput input, AppDbContext db, HttpContext c) => {
+            Admin(c); await Sites(db, c, customerId);
+            await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            var nodes = await db.Nodes.AsNoTracking().Where(x => x.CustomerId == customerId).ToListAsync();
+            var source = nodes.SingleOrDefault(x => x.Id == id); Require(source != null && source.Kind != "Site", "Kopierbaren Untereintrag auswählen.", 404);
+            Require(source!.Version == input.Version, "Der Eintrag wurde geändert. Bitte neu laden.", 409);
+            var subtree = new List<TechnicalNode>();
+            void Collect(TechnicalNode n) { subtree.Add(n); foreach (var child in nodes.Where(x => x.ParentId == n.Id)) Collect(child); }
+            Collect(source); Require(!subtree.Any(x => x.Id == input.ParentId), "Die Kopie muss außerhalb des ursprünglichen Teilbaums liegen.");
+            Require(nodes.Any(x => x.Id == input.ParentId), "Zieleintrag dieses Kunden nicht gefunden.", 404);
+            var copies = new Dictionary<Guid, Guid>();
+            foreach (var original in input.IncludeChildren ? subtree : [source]) {
+                var copy = JsonSerializer.Deserialize<TechnicalNode>(JsonSerializer.Serialize(original))!;
+                copy.Id = Guid.NewGuid(); copy.ParentId = original.Id == id ? input.ParentId : copies[original.ParentId!.Value];
+                copy.Number = original.Id == id ? input.Number : original.Number[..Math.Min(original.Number.Length, 45)] + "-K" + Guid.NewGuid().ToString("N")[..8];
+                copy.Name = original.Id == id ? input.Name : original.Name;
+                copy.MeasuringPointId = null; copy.Version = 1; copy.CreatedAt = copy.UpdatedAt = DateTimeOffset.UtcNow;
+                await ValidateNode(copy, db); db.Nodes.Add(copy); await db.SaveChangesAsync(); copies[original.Id] = copy.Id;
+            }
+            Security.Audit(db, c, "Kataster.Kopiert", copies[id].ToString(), customerId, JsonSerializer.Serialize(new { sourceId = id, targetParentId = input.ParentId, copied = copies }));
+            await db.SaveChangesAsync(); await tx.CommitAsync(); return Results.Ok(new { id = copies[id], count = copies.Count });
+        });
         group.MapGet("/tree", async (Guid customerId, AppDbContext db, HttpContext c) =>
         {
             var sites = await Sites(db, c, customerId);
@@ -74,10 +97,11 @@ public static class TechnicalEndpoints
         estimatedAnnualKwh = node.Kind == "ConsumerAsset" ? node.Quantity * (node.SystemPowerW ?? node.RatedPowerW) / 1000m * node.AnnualHours * node.LoadFactor : (decimal?)null };
     static async Task ValidateNode(TechnicalNode n, AppDbContext db)
     {
-        Require(Kinds.Contains(n.Kind) && !string.IsNullOrWhiteSpace(n.Name) && !string.IsNullOrWhiteSpace(n.Number), "Typ, Bezeichnung und Nummer sind erforderlich.");
+        Require(Kinds.Contains(n.Kind) && !string.IsNullOrWhiteSpace(n.Name) && !string.IsNullOrWhiteSpace(n.Number), "Typ, Bezeichnung und ID sind erforderlich.");
         Require(n.AssetRole is "Consumption" or "Generation" or "Both", "Energierolle muss Verbraucher, Erzeuger oder beides sein.");
+        Require(n.SavingsPercent is >= 0 and <= 100, "Die angenommene Einsparung muss zwischen 0 und 100 Prozent liegen.");
         Require(n.AnnualEnergyValue is not < 0 && TheoreticalBalance.Units.TryGetValue(n.AnnualEnergyMedium, out var annualUnits) && annualUnits.Contains(n.AnnualEnergyUnit), "Jahresmenge und zum Energieträger passende Einheit angeben.");
-        Require(n.Number.Length <= 60 && n.Name.Length <= 200, "Nummer oder Bezeichnung zu lang.");
+        Require(n.Number.Length <= 60 && n.Name.Length <= 200, "ID oder Bezeichnung zu lang.");
         foreach (var p in typeof(TechnicalNode).GetProperties().Where(x => x.PropertyType == typeof(decimal) || x.PropertyType == typeof(decimal?)))
             if (p.GetValue(n) is decimal value) Require(Math.Abs(value) <= 1000000000000000m && decimal.Round(value, 6) == value, "Zahlen dürfen maximal sechs Nachkommastellen und einen Betrag von höchstens 10¹⁵ enthalten.");
         foreach (var p in typeof(TechnicalNode).GetProperties().Where(x => x.PropertyType == typeof(string)))

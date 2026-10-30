@@ -84,6 +84,10 @@ function ExcelWorkflow({
     [busy, setBusy] = useState(false),
     [done, setDone] = useState(""),
     [fileKey, setFileKey] = useState(0);
+  const [format, setFormat] = useState("xlsx"),
+    [csvPoint, setCsvPoint] = useState(
+      points.length === 1 ? points[0].point.id : "",
+    );
   const work = async (action: () => Promise<void>) => {
     setBusy(true);
     setError(undefined);
@@ -99,6 +103,7 @@ function ExcelWorkflow({
   const form = () => {
     const body = new FormData();
     for (const file of files) body.append("files", file);
+    if (csvPoint) body.set("csvPointId", csvPoint);
     return body;
   };
   return (
@@ -115,6 +120,12 @@ function ExcelWorkflow({
         </p>
       )}
       <h3>1. Vorlagen herunterladen</h3>
+      <Field label="Vorlagenformat">
+        <select value={format} onChange={(e) => setFormat(e.target.value)}>
+          <option value="xlsx">Excel (XLSX)</option>
+          <option value="csv">CSV</option>
+        </select>
+      </Field>
       {points.length > 1 && (
         <>
           <Field label="Zähler für Download suchen">
@@ -178,7 +189,7 @@ function ExcelWorkflow({
           void work(async () => {
             if (selected.length === 1)
               await download(
-                `/meters/${selected[0]}/excel`,
+                `/meters/${selected[0]}/excel?format=${format}`,
                 `Zaehler-${selected[0]}.xlsx`,
               );
             else
@@ -186,13 +197,15 @@ function ExcelWorkflow({
                 "/meter-excel/export",
                 "Zaehler-Vorlagen.zip",
                 "POST",
-                { customerId, pointIds: selected },
+                { customerId, pointIds: selected, format },
               );
           })
         }
       >
         {selected.length === 1
-          ? "Excel-Vorlage herunterladen"
+          ? format === "csv"
+            ? "CSV-Vorlage herunterladen"
+            : "Excel-Vorlage herunterladen"
           : `${selected.length} Vorlagen als ZIP herunterladen`}
       </button>
       {canWrite && (
@@ -200,17 +213,40 @@ function ExcelWorkflow({
           <hr />
           <h3>2. Ausgefüllte Vorlagen prüfen und importieren</h3>
           <p className="subtle">
-            Mehrere XLSX-Dateien oder ein ZIP hochladen. Zusammen maximal 6 MB,
-            100 Vorlagen und 5.000 ausgefüllte Zeilen. Identische vorhandene
-            Stände werden übersprungen. Bei Fehlern wird der gesamte Import
-            zurückgehalten.
+            XLSX, XLSM oder CSV einzeln bzw. als ZIP hochladen. Makros werden
+            nicht ausgeführt. Zusammen maximal 6 MB, 100 Vorlagen und 5.000
+            ausgefüllte Zeilen. Identische vorhandene Stände werden
+            übersprungen. Bei Fehlern wird der gesamte Import zurückgehalten.
           </p>
-          <Field label="Ausgefüllte Excel-Dateien / ZIP auswählen">
+          <p className="subtle">
+            Normale CSV: Spalten „Datum“ und „Zählerstand“, dazu „ID Messstelle“
+            oder eine Zuordnung unten. Trennzeichen: Semikolon, Komma oder
+            Tabulator. CSV hat keinen Blattschutz; Vorlagenkennungen werden
+            trotzdem geprüft.
+          </p>
+          <Field label="CSV ohne Kennung zuordnen">
+            <select
+              value={csvPoint}
+              disabled={busy}
+              onChange={(e) => {
+                setCsvPoint(e.target.value);
+                setPreview(null);
+              }}
+            >
+              <option value="">ID Messstelle aus CSV verwenden</option>
+              {points.map((p) => (
+                <option key={p.point.id} value={p.point.id}>
+                  {p.point.name} · {p.point.number}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Ausgefüllte Excel-/CSV-Dateien / ZIP auswählen">
             <input
               key={fileKey}
               type="file"
               multiple
-              accept=".xlsx,.zip"
+              accept=".xlsx,.xlsm,.csv,.zip"
               disabled={busy}
               onChange={(e) => {
                 setFiles(Array.from(e.target.files || []));

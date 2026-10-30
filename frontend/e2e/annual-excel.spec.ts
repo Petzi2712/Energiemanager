@@ -54,7 +54,7 @@ for (const width of [1440, 390]) {
     await page.locator('.theory-chart').screenshot({ path: `../artifacts/theory-${width}.png` });
     await page.getByRole('button', { name: '+ Untereintrag anlegen', exact: true }).click();
     await page.getByLabel('Strukturtyp', { exact: true }).selectOption('ConsumerAsset');
-    await page.getByLabel('Nummer *', { exact: true }).fill('J-' + suffix);
+    await page.getByLabel('ID *', { exact: true }).fill('J-' + suffix);
     await page.getByLabel('Bezeichnung *', { exact: true }).fill('UI Jahresbedarf ' + suffix);
     await page.getByLabel('Vorgegebene Jahresmenge (optional)').fill('5000');
     await page.getByRole('button', { name: 'Katastereintrag speichern', exact: true }).click();
@@ -68,7 +68,7 @@ for (const width of [1440, 390]) {
     const workbook = await firstDownload; expect(workbook.suggestedFilename()).toContain('XLS-');
     const source = resolve(`../artifacts/template-${suffix}.xlsx`), target = resolve(`../artifacts/filled-${suffix}.xlsx`);
     await workbook.saveAs(source); fillExcel(source, target);
-    await page.getByLabel('Ausgefüllte Excel-Dateien / ZIP auswählen').setInputFiles(target);
+    await page.getByLabel('Ausgefüllte Excel-/CSV-Dateien / ZIP auswählen').setInputFiles(target);
     await page.getByRole('button', { name: 'Dateien prüfen', exact: true }).click();
     await expect(page.getByText('2 neue Werte · 0 identische Werte · 0 Fehler · 0 Grenzwertwarnungen')).toBeVisible();
     await page.getByRole('button', { name: 'Geprüfte Ablesungen importieren', exact: true }).click();
@@ -82,7 +82,7 @@ for (const width of [1440, 390]) {
     const archive = await zipDownload; const zipSource = resolve(`../artifacts/templates-${suffix}.zip`), zipTarget = resolve(`../artifacts/filled-${suffix}.zip`);
     await archive.saveAs(zipSource); fillExcel(zipSource, zipTarget, true);
     // Beide Dateien enthalten weitere Ablesungen nach den bisher importierten Ständen.
-    await page.getByLabel('Ausgefüllte Excel-Dateien / ZIP auswählen').setInputFiles(zipTarget);
+    await page.getByLabel('Ausgefüllte Excel-/CSV-Dateien / ZIP auswählen').setInputFiles(zipTarget);
     await page.getByRole('button', { name: 'Dateien prüfen', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Importvorschau', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Geprüfte Ablesungen importieren' })).toBeEnabled();

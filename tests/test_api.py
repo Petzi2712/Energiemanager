@@ -85,7 +85,7 @@ class ApiIntegration(unittest.TestCase):
         self.assertFalse(self.admin.req('/api/auth/me')[1]['mustChangePassword'])
 
     def test_02_database_health(self):
-        self.assertEqual(Client().req('/api/health'), (200, {'status': 'ok', 'phase': 4, 'version': '0.4.0'}))
+        self.assertEqual(Client().req('/api/health'), (200, {'status': 'ok', 'phase': 5, 'version': '0.5.0'}))
 
     def test_03_anonymous_denied(self):
         self.assertEqual(Client().req('/api/customers/')[0], 401)

@@ -6,9 +6,26 @@ namespace Energy;
 public static class TheoreticalBalance
 {
     public static readonly Dictionary<string, string[]> Units = new(MeterService.Media) { ["Other"] = ["kWh", "MWh", "m³", "L"] };
-    public record Entry(Guid Id, string Name, string Number, string Category, string Building, string Medium, string Unit, string Role, decimal Value, string Source);
+    public record Entry(Guid Id, string Name, string Number, string Category, string Building, string Medium, string Unit, string Role, decimal Value, string Source, decimal SavingsPercent, int Version);
+    public record SavingsItem(Guid Id, decimal Percent, int Version);
+    public record SavingsInput(SavingsItem[] Items);
     public static void Map(RouteGroupBuilder api)
     {
+        api.MapPut("/technical/{customerId:guid}/savings", async (Guid customerId, SavingsInput input, AppDbContext db, HttpContext c) => {
+            Admin(c); var sites = await Sites(db, c, customerId);
+            Require(input.Items != null && input.Items.Length is > 0 and <= 500 && input.Items.Select(x => x.Id).Distinct().Count() == input.Items.Length, "1 bis 500 unterschiedliche Komponenten auswählen.");
+            await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            var nodes = await db.Nodes.Where(x => x.CustomerId == customerId).ToListAsync();
+            foreach (var item in input.Items!) {
+                var node = nodes.SingleOrDefault(x => x.Id == item.Id);
+                Require(node != null && node.IsActive && node.AssetRole == "Consumption" && sites.Contains(SiteOf(node, nodes)), "Verbraucher nicht gefunden.", 404);
+                Require(node!.Version == item.Version, "Komponente wurde geändert. Bitte neu laden.", 409);
+                Require(item.Percent is >= 0 and <= 100 && decimal.Round(item.Percent, 6) == item.Percent, "Einsparung als Prozentwert von 0 bis 100 angeben.");
+                var before = node.SavingsPercent; node.SavingsPercent = item.Percent; node.Version++; node.UpdatedAt = DateTimeOffset.UtcNow;
+                Security.Audit(db, c, "Kataster.EinsparannahmeGeändert", node.Id.ToString(), customerId, System.Text.Json.JsonSerializer.Serialize(new { before, after = item.Percent }));
+            }
+            await db.SaveChangesAsync(); await tx.CommitAsync(); return Results.Ok(new { count = input.Items!.Length });
+        }).RequireAuthorization();
         api.MapGet("/technical/{customerId:guid}/balance", async (Guid customerId, Guid nodeId, AppDbContext db, HttpContext c) => {
             var sites = await Sites(db, c, customerId);
             var nodes = await db.Nodes.Where(x => x.CustomerId == customerId).OrderBy(x => x.Number).ToListAsync();
@@ -29,7 +46,7 @@ public static class TheoreticalBalance
                 if (value.HasValue) {
                     if (blocked.Contains(key)) covered++;
                     else {
-                        entries.Add(new Entry(n.Id, n.Name, n.Number, string.IsNullOrWhiteSpace(n.AssetType) ? n.Kind == "ConsumerAsset" ? "Sonstige Hardware" : "Unteranlage / Gesamtansatz" : n.AssetType, Building(n), medium, unit, n.AssetRole, value.Value, explicitValue ? "Vorgegebener Jahreswert" : "Leistung × Betriebsstunden × Lastfaktor"));
+                        entries.Add(new Entry(n.Id, n.Name, n.Number, string.IsNullOrWhiteSpace(n.AssetType) ? n.Kind == "ConsumerAsset" ? "Sonstige Hardware" : "Unteranlage / Gesamtansatz" : n.AssetType, Building(n), medium, unit, n.AssetRole, value.Value, explicitValue ? "Vorgegebener Jahreswert" : "Leistung × Betriebsstunden × Lastfaktor", n.SavingsPercent, n.Version));
                         next.Add(key);
                     }
                 } else if (n.Kind == "ConsumerAsset" && !blocked.Contains(key)) missing.Add(new { n.Id, n.Name });

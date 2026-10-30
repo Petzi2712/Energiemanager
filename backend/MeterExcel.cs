@@ -12,9 +12,9 @@ using static Energy.TechnicalAccess;
 
 namespace Energy;
 
-public record ExcelExportInput(Guid CustomerId, Guid[] PointIds);
+public record ExcelExportInput(Guid CustomerId, Guid[] PointIds, string Format = "xlsx");
 public record ExcelBinding(int Schema, Guid CustomerId, Guid PointId, Guid InstallationId, string Unit, string TimeZone, Dictionary<string, string> Fixed);
-public record ExcelPreview(string Hash, Guid UserId, Guid CustomerId, Dictionary<Guid, int> Versions, DateTimeOffset Expires);
+public record ExcelPreview(string Hash, Guid UserId, Guid CustomerId, Dictionary<Guid, int> Versions, DateTimeOffset Expires, Guid? CsvPointId = null);
 public record ExcelFile(string Name, byte[] Bytes);
 public class ExcelRow
 {
@@ -40,7 +40,7 @@ public static class MeterExcel
     public const int FirstRow = 15, LastRow = 514, MaxRows = 5000;
     public const string ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     public static string FileName(MeasuringPoint p) => $"Zaehler-{new string(p.Number.Select(ch => char.IsLetterOrDigit(ch) || ch is '-' or '_' ? ch : '-').Take(45).ToArray())}-{p.Id.ToString()[..8]}.xlsx";
-    static IDataProtector Binding(IDataProtectionProvider dp) => dp.CreateProtector("sysDATIQ.MeterExcel.Template.v1");
+    internal static IDataProtector Binding(IDataProtectionProvider dp) => dp.CreateProtector("sysDATIQ.MeterExcel.Template.v1");
     public static IDataProtector Preview(IDataProtectionProvider dp) => dp.CreateProtector("sysDATIQ.MeterExcel.Preview.v1");
     public static string Hash(List<ExcelFile> files) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('|', files.Select(f => Convert.ToHexString(SHA256.HashData(f.Bytes)))))));
 
@@ -54,7 +54,7 @@ public static class MeterExcel
         var device = await db.Devices.SingleAsync(x => x.Id == installation.DeviceId);
         var fixedCells = new Dictionary<string, string> {
             ["A1"] = "sysDATIQ · Zählerablesungen", ["A3"] = "Kunde", ["B3"] = customer.Name,
-            ["A4"] = "Standort", ["B4"] = site.Name, ["A5"] = "Messstelle", ["B5"] = p.Number + " · " + p.Name,
+            ["A4"] = "Standort", ["B4"] = site.Name, ["A5"] = "ID Messstelle", ["B5"] = p.Number + " · " + p.Name,
             ["A6"] = "Zählergerät", ["B6"] = device.Number, ["A7"] = "Einheit / Faktor", ["B7"] = p.Unit + " / " + installation.Factor.ToString(CultureInfo.InvariantCulture),
             ["A8"] = "Zeitzone", ["B8"] = site.TimeZone, ["A9"] = "Geräteperiode ab", ["B9"] = TimeZoneInfo.ConvertTime(installation.ValidFrom, TimeZoneInfo.FindSystemTimeZoneById(site.TimeZone)).ToString("dd.MM.yyyy HH:mm:ss", CultureInfo.InvariantCulture),
             ["A10"] = "Nur die gelben Datums- und Zählerstandsfelder ausfüllen. Bis zu 500 Ablesungen je Datei.",
@@ -84,11 +84,11 @@ public static class MeterExcel
         using var output = new MemoryStream(); wb.SaveAs(output); return output.ToArray();
     }
 
-    static void CheckArchive(byte[] bytes)
+    static void CheckArchive(byte[] bytes, bool macros)
     {
         using var zip = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
         Require(zip.Entries.Count <= 300 && zip.Entries.Sum(x => x.Length) <= 32 * 1024 * 1024 && zip.Entries.Select(x => x.FullName).Distinct(StringComparer.OrdinalIgnoreCase).Count() == zip.Entries.Count, "Excel-Datei ist zu groß oder ungültig.");
-        Require(zip.GetEntry("xl/workbook.xml") != null && zip.Entries.All(x => !x.FullName.Contains("vbaProject", StringComparison.OrdinalIgnoreCase) && !x.FullName.Contains("externalLinks", StringComparison.OrdinalIgnoreCase)), "Nur die heruntergeladene XLSX-Vorlage ohne Makros oder externe Verknüpfungen verwenden.");
+        Require(zip.GetEntry("xl/workbook.xml") != null && zip.Entries.All(x => (macros || !x.FullName.Contains("vbaProject", StringComparison.OrdinalIgnoreCase)) && !x.FullName.Contains("externalLinks", StringComparison.OrdinalIgnoreCase)), "Nur die heruntergeladene XLSX-/XLSM-Vorlage ohne externe Verknüpfungen verwenden.");
         var sheets = zip.Entries.Where(x => x.FullName.StartsWith("xl/worksheets/") && x.FullName.EndsWith(".xml")).ToList();
         Require(sheets.Count == 2, "Die Vorlage muss ihre zwei ursprünglichen Arbeitsblätter behalten.");
         foreach (var entry in sheets) {
@@ -109,7 +109,7 @@ public static class MeterExcel
     }
     public static async Task<List<ExcelFile>> ReadFiles(HttpContext c, IFormCollection form)
     {
-        Require(form.Files.Count is > 0 and <= 100, "1 bis 100 XLSX-Dateien oder ein ZIP auswählen.");
+        Require(form.Files.Count is > 0 and <= 100, "1 bis 100 XLSX-, XLSM-, CSV-Dateien oder ein ZIP auswählen.");
         var files = new List<ExcelFile>(); long expanded = 0;
         foreach (var file in form.Files) {
             Require(file.Length is > 0 and <= 6 * 1024 * 1024, "Datei ist leer oder größer als 6 MB.");
@@ -118,16 +118,41 @@ public static class MeterExcel
                 using var zip = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
                 foreach (var entry in zip.Entries.Where(x => !x.FullName.EndsWith('/'))) {
                     expanded += entry.Length;
-                    Require(files.Count < 100 && entry.Length <= 6 * 1024 * 1024 && expanded <= 20 * 1024 * 1024 && entry.FullName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase), "ZIP darf nur bis zu 100 XLSX-Vorlagen enthalten (zusammen maximal 20 MB entpackt).");
+                    Require(files.Count < 100 && entry.Length <= 6 * 1024 * 1024 && expanded <= 20 * 1024 * 1024 && Supported(entry.FullName), "ZIP darf nur bis zu 100 XLSX-, XLSM- oder CSV-Dateien enthalten (zusammen maximal 20 MB entpackt).");
                     using var data = new MemoryStream(); using var source = entry.Open(); await source.CopyToAsync(data);
                     files.Add(new ExcelFile(Path.GetFileName(entry.FullName), data.ToArray()));
                 }
-            } else { Require(file.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase), "Nur XLSX-Vorlagen oder ZIP-Dateien verwenden."); files.Add(new ExcelFile(Path.GetFileName(file.FileName), bytes)); }
+            } else { Require(Supported(file.FileName), "Nur XLSX, XLSM, CSV oder ZIP verwenden."); files.Add(new ExcelFile(Path.GetFileName(file.FileName), bytes)); }
         }
-        Require(files.Count is > 0 and <= 100, "1 bis 100 XLSX-Vorlagen auswählen."); return files;
+        Require(files.Count is > 0 and <= 100, "1 bis 100 XLSX-, XLSM- oder CSV-Dateien auswählen."); return files;
     }
-    static string CellText(IXLCell cell) { Require(!cell.HasFormula, "Formeln sind nicht erlaubt."); return cell.GetString(); }
-    static DateTimeOffset Date(IXLCell cell, string zoneId)
+    static bool Supported(string name) => new[] { ".xlsx", ".xlsm", ".csv" }.Contains(Path.GetExtension(name).ToLowerInvariant());
+    static XLWorkbook ReadWorkbook(ExcelFile file)
+    {
+        if (!file.Name.EndsWith(".xlsm", StringComparison.OrdinalIgnoreCase)) return new XLWorkbook(new MemoryStream(file.Bytes));
+        // Importiert werden ausschließlich Tabellenwerte. VBA-Teile werden vor
+        // dem Einlesen aus einer temporären Paketkopie entfernt.
+        using var input = new ZipArchive(new MemoryStream(file.Bytes), ZipArchiveMode.Read);
+        using var converted = new MemoryStream();
+        using (var output = new ZipArchive(converted, ZipArchiveMode.Create, true)) {
+            foreach (var part in input.Entries.Where(x => !x.FullName.Contains("vbaProject", StringComparison.OrdinalIgnoreCase))) {
+                var entry = output.CreateEntry(part.FullName); using var target = entry.Open(); using var source = part.Open();
+                if (part.FullName == "[Content_Types].xml" || part.FullName.EndsWith(".rels", StringComparison.OrdinalIgnoreCase)) {
+                    using var reader = XmlReader.Create(source, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null }); var xml = XDocument.Load(reader);
+                    foreach (var element in xml.Descendants().Where(x => x.Attributes().Any(a => a.Value.Contains("vbaProject", StringComparison.OrdinalIgnoreCase))).ToList()) element.Remove();
+                    foreach (var attribute in xml.Descendants().Attributes("ContentType").Where(x => x.Value == "application/vnd.ms-excel.sheet.macroEnabled.main+xml")) attribute.Value = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml";
+                    // OPC erwartet die Paketwurzeln ohne Präfix. Einige
+                    // Tabellenprogramme schreiben dieselbe Namespace-URI mit Präfix.
+                    xml.Root!.Attributes().Where(x => x.IsNamespaceDeclaration).Remove();
+                    xml.Root.SetAttributeValue("xmlns", xml.Root.Name.NamespaceName);
+                    xml.Save(target);
+                } else source.CopyTo(target);
+            }
+        }
+        converted.Position = 0; return new XLWorkbook(converted);
+    }
+    internal static string CellText(IXLCell cell) { Require(!cell.HasFormula, "Formeln sind nicht erlaubt."); return cell.GetString(); }
+    internal static DateTimeOffset Date(IXLCell cell, string zoneId)
     {
         Require(!cell.HasFormula, "Formeln sind nicht erlaubt.");
         DateTime date;
@@ -143,7 +168,7 @@ public static class MeterExcel
         Require(!zone.IsAmbiguousTime(date), "Doppelte Winterzeit: Datum als ISO-Text mit eindeutigem UTC-Offset angeben.");
         return new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(date, zone));
     }
-    static decimal Value(IXLCell cell)
+    internal static decimal Value(IXLCell cell)
     {
         Require(!cell.HasFormula, "Formeln sind nicht erlaubt.");
         if (cell.DataType == XLDataType.Number) return Convert.ToDecimal(cell.GetDouble());
@@ -152,12 +177,13 @@ public static class MeterExcel
         return value;
     }
 
-    public static async Task<ExcelPlan> Plan(List<ExcelFile> files, Guid customerId, AppDbContext db, HttpContext c, IDataProtectionProvider dp)
+    public static async Task<ExcelPlan> Plan(List<ExcelFile> files, Guid customerId, AppDbContext db, HttpContext c, IDataProtectionProvider dp, Guid? csvPointId = null)
     {
         var sites = await Sites(db, c, customerId); var plan = new ExcelPlan();
         foreach (var file in files) {
             try {
-                CheckArchive(file.Bytes); using var wb = new XLWorkbook(new MemoryStream(file.Bytes));
+                if (file.Name.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)) { await MeterCsv.Add(file, customerId, csvPointId, db, c, dp, sites, plan); continue; }
+                CheckArchive(file.Bytes, file.Name.EndsWith(".xlsm", StringComparison.OrdinalIgnoreCase)); using var wb = ReadWorkbook(file);
                 Require(wb.Worksheets.Count == 2 && wb.Worksheets.TryGetWorksheet("Ablesungen", out var sheet) && wb.Worksheets.TryGetWorksheet("Zuordnung", out _), "Die ursprünglichen Arbeitsblätter müssen erhalten bleiben.");
                 sheet = wb.Worksheet("Ablesungen"); var meta = wb.Worksheet("Zuordnung");
                 Require(meta.CellsUsed().Count() == 1 && !meta.Cell("A1").HasFormula, "Vorlagenzuordnung wurde verändert.");
@@ -215,18 +241,20 @@ public static class MeterExcelEndpoints
 {
     public static void Map(RouteGroupBuilder api)
     {
-        api.MapGet("/meters/{id:guid}/excel", async (Guid id, AppDbContext db, HttpContext c, IDataProtectionProvider dp) => {
+        api.MapGet("/meters/{id:guid}/excel", async (Guid id, AppDbContext db, HttpContext c, IDataProtectionProvider dp, string? format) => {
+            Require(format == null || format is "xlsx" or "csv", "Unbekanntes Vorlagenformat.");
             var bytes = await MeterExcel.Export(id, db, c, dp); var p = await MeterService.Point(db, c, id);
             Security.Audit(db, c, "Excel.VorlageExportiert", id.ToString(), p.CustomerId); await db.SaveChangesAsync();
-            return Results.File(bytes, MeterExcel.ContentType, MeterExcel.FileName(p));
+            return format == "csv" ? Results.File(MeterCsv.Export(bytes), "text/csv; charset=utf-8", Path.ChangeExtension(MeterExcel.FileName(p), ".csv")) : Results.File(bytes, MeterExcel.ContentType, MeterExcel.FileName(p));
         }).RequireAuthorization();
         api.MapPost("/meter-excel/export", async (ExcelExportInput input, AppDbContext db, HttpContext c, IDataProtectionProvider dp) => {
             await Sites(db, c, input.CustomerId); Require(input.PointIds != null && input.PointIds.Length is > 0 and <= 100, "1 bis 100 Messstellen auswählen.");
+            Require(input.Format is "xlsx" or "csv", "Unbekanntes Vorlagenformat.");
             using var result = new MemoryStream();
             using (var zip = new ZipArchive(result, ZipArchiveMode.Create, true)) {
                 foreach (var id in input.PointIds!.Distinct()) {
                     var p = await MeterService.Point(db, c, id); Require(p.CustomerId == input.CustomerId, "Messstelle gehört nicht zum gewählten Kunden.", 404);
-                    var bytes = await MeterExcel.Export(id, db, c, dp); var entry = zip.CreateEntry(MeterExcel.FileName(p));
+                    var bytes = await MeterExcel.Export(id, db, c, dp); if (input.Format == "csv") bytes = MeterCsv.Export(bytes); var entry = zip.CreateEntry(input.Format == "csv" ? Path.ChangeExtension(MeterExcel.FileName(p), ".csv") : MeterExcel.FileName(p));
                     using var stream = entry.Open(); await stream.WriteAsync(bytes);
                 }
             }
@@ -241,16 +269,18 @@ public static class MeterExcelEndpoints
                 List<ExcelFile> files;
                 try { files = await MeterExcel.ReadFiles(c, form); } catch (InvalidDataException) { throw new TechnicalFault(400, "ZIP-Datei ist beschädigt."); }
                 await using var tx = commit ? await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable) : null;
-                var plan = await MeterExcel.Plan(files, customerId, db, c, dp);
+                Guid? csvPointId = null;
+                if (!string.IsNullOrWhiteSpace(form["csvPointId"])) { Require(Guid.TryParse(form["csvPointId"], out var parsedId), "CSV-Messstelle ist ungültig."); csvPointId = parsedId; }
+                var plan = await MeterExcel.Plan(files, customerId, db, c, dp, csvPointId);
                 var errors = plan.Rows.Count(x => x.Status == "Fehler"); var warnings = plan.Rows.Count(x => x.Status == "Warnung");
                 if (!commit) {
-                    var token = MeterExcel.Preview(dp).Protect(JsonSerializer.Serialize(new ExcelPreview(MeterExcel.Hash(files), c.UserId(), customerId, plan.Versions, DateTimeOffset.UtcNow.AddMinutes(30))));
+                    var token = MeterExcel.Preview(dp).Protect(JsonSerializer.Serialize(new ExcelPreview(MeterExcel.Hash(files), c.UserId(), customerId, plan.Versions, DateTimeOffset.UtcNow.AddMinutes(30), csvPointId)));
                     return Results.Ok(new { rows = plan.Rows, errors, warnings, ready = plan.Candidates.Count, skipped = plan.Rows.Count(x => x.Status == "Übersprungen"), token });
                 }
                 ExcelPreview preview;
                 try { preview = JsonSerializer.Deserialize<ExcelPreview>(MeterExcel.Preview(dp).Unprotect(form["previewToken"].ToString()))!; }
                 catch (Exception ex) when (ex is CryptographicException or JsonException or ArgumentException) { throw new TechnicalFault(409, "Zuerst eine gültige Importvorschau erstellen."); }
-                Require(preview.UserId == c.UserId() && preview.CustomerId == customerId && preview.Hash == MeterExcel.Hash(files) && preview.Expires > DateTimeOffset.UtcNow && preview.Versions.Count == plan.Versions.Count && preview.Versions.All(x => plan.Versions.TryGetValue(x.Key, out var version) && version == x.Value), "Dateien oder Messdaten wurden geändert. Vorschau erneut erstellen.", 409);
+                Require(preview.CsvPointId == csvPointId && preview.UserId == c.UserId() && preview.CustomerId == customerId && preview.Hash == MeterExcel.Hash(files) && preview.Expires > DateTimeOffset.UtcNow && preview.Versions.Count == plan.Versions.Count && preview.Versions.All(x => plan.Versions.TryGetValue(x.Key, out var version) && version == x.Value), "Dateien oder Messdaten wurden geändert. Vorschau erneut erstellen.", 409);
                 Require(errors == 0, "Import enthält Fehler. Es wurde nichts gespeichert. Dateien korrigieren und erneut prüfen.", 422);
                 var reason = form["reason"].ToString();
                 Require(warnings == 0 || form["confirmWarnings"] == "true" && reason.Trim().Length is >= 5 and <= 1000, "Konfigurierte Grenzwertüberschreitungen mit Begründung bestätigen.", 422);

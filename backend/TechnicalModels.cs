@@ -29,6 +29,7 @@ public class TechnicalNode
     public string AssetType { get; set; } = "";
     public string AssetRole { get; set; } = "Consumption";
     public decimal? AnnualEnergyValue { get; set; }
+    public decimal SavingsPercent { get; set; }
     public string AnnualEnergyUnit { get; set; } = "kWh";
     public string AnnualEnergyMedium { get; set; } = "Electricity";
     public string Manufacturer { get; set; } = "";

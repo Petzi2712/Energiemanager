@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, ApiError, date } from "../api";
 import { Badge, Dialog, ErrorBox, Field } from "../ui";
@@ -166,9 +166,14 @@ export function MeterPanel({
   onAssignment: () => void;
   onDeleted: () => Promise<void>;
 }) {
+  const [page, setPage] = useState(1),
+    [filter, setFilter] = useState({ from: "", to: "" });
+  const params = new URLSearchParams({ page: String(page) });
+  if (filter.from) params.set("from", filter.from);
+  if (filter.to) params.set("to", filter.to);
   const q = useQuery({
-    queryKey: ["meter", view.point.id],
-    queryFn: () => api<Detail>(`/meters/${view.point.id}`),
+    queryKey: ["meter", view.point.id, page, filter],
+    queryFn: () => api<Detail>(`/meters/${view.point.id}?${params}`),
   });
   const [edit, setEdit] = useState<Reading | null>(null),
     [replacement, setReplacement] = useState(false),
@@ -297,109 +302,22 @@ export function MeterPanel({
       {canWrite && p.isActive && (
         <ReadingForm point={view} installation={current} onSaved={reload} />
       )}
-      <section className="panel">
-        <div className="section-heading">
-          <div>
-            <h2>Ablesehistorie</h2>
-            <p className="subtle">
-              Maximal 500 aktuelle Ablesungen · Geräteperioden · {timeZone}
-            </p>
-          </div>
-          <button onClick={reload}>Aktualisieren</button>
-        </div>
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Ablesezeitpunkt</th>
-                <th>Zählerstand</th>
-                <th>Verbrauch</th>
-                <th>Status / Ereignis</th>
-                <th>Nachweis</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data?.readings.map(({ reading: r, consumption }) => (
-                <tr key={r.id}>
-                  <td>
-                    {displayDate(r.at)}
-                    <small>Gespeichert: {displayDate(r.createdAt)}</small>
-                    <small>
-                      {
-                        data.devices.find(
-                          (d) =>
-                            d.id ===
-                            data.installations.find(
-                              (i) => i.id === r.installationId,
-                            )?.deviceId,
-                        )?.number
-                      }
-                    </small>
-                  </td>
-                  <td>
-                    {num(r.value)} {p.unit}
-                  </td>
-                  <td>
-                    {num(consumption)} {consumption == null ? "" : p.unit}
-                  </td>
-                  <td>
-                    <Badge active={r.status === "Gültig"}>{r.status}</Badge>
-                    <small>
-                      {r.event}
-                      {r.isRollover ? " · Überlauf" : ""}
-                    </small>
-                    <small>{r.comment}</small>
-                    {r.reason && <small>Begründung: {r.reason}</small>}
-                  </td>
-                  <td>
-                    {admin && (
-                      <button
-                        className="table-action"
-                        onClick={() => setEdit(r)}
-                      >
-                        Korrigieren
-                      </button>
-                    )}
-                    <Documents
-                      readingId={r.id}
-                      documents={data.documents.filter(
-                        (d) => d.readingId === r.id,
-                      )}
-                      canWrite={canWrite}
-                      onSaved={reload}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!data?.readings.length && (
-          <p className="empty">Noch keine Ablesung vorhanden.</p>
-        )}
-        {data && data.revisions.length > 0 && (
-          <details className="revision-history">
-            <summary>Korrekturhistorie ({data.revisions.length})</summary>
-            {data.revisions.map((r) => (
-              <div key={r.id}>
-                <strong>
-                  {displayDate(r.at)} · {r.reason}
-                </strong>
-                <pre>
-                  {JSON.stringify(
-                    {
-                      vorher: JSON.parse(r.before),
-                      nachher: JSON.parse(r.after),
-                    },
-                    null,
-                    2,
-                  )}
-                </pre>
-              </div>
-            ))}
-          </details>
-        )}
-      </section>
+      <ReadingHistory
+        data={data}
+        unit={p.unit}
+        timeZone={timeZone}
+        displayDate={displayDate}
+        admin={admin}
+        canWrite={canWrite}
+        busy={q.isFetching}
+        reload={reload}
+        onEdit={setEdit}
+        onPage={setPage}
+        onFilter={(next) => {
+          setFilter(next);
+          setPage(1);
+        }}
+      />
       <Consumption pointId={p.id} version={p.version} />
       {remove && (
         <DeleteDialog
@@ -440,6 +358,257 @@ export function MeterPanel({
         />
       )}
     </>
+  );
+}
+function ReadingHistory({
+  data,
+  unit,
+  timeZone,
+  displayDate,
+  admin,
+  canWrite,
+  busy,
+  reload,
+  onEdit,
+  onPage,
+  onFilter,
+}: {
+  data?: Detail;
+  unit: string;
+  timeZone: string;
+  displayDate: (value?: string | null) => string;
+  admin: boolean;
+  canWrite: boolean;
+  busy: boolean;
+  reload: () => Promise<void>;
+  onEdit: (r: Reading) => void;
+  onPage: (page: number) => void;
+  onFilter: (range: { from: string; to: string }) => void;
+}) {
+  const [range, setRange] = useState({ from: "", to: "" }),
+    [expanded, setExpanded] = useState<string | null>(null),
+    [error, setError] = useState<unknown>();
+  const paging = data?.paging;
+  return (
+    <section className="panel reading-history-panel">
+      <div className="section-heading">
+        <div>
+          <h2>Ablesehistorie</h2>
+          <p className="subtle">
+            15 Einträge je Seite · Zeitangaben: {timeZone}
+          </p>
+        </div>
+        <button disabled={busy} onClick={reload}>
+          Aktualisieren
+        </button>
+      </div>
+      <form
+        autoComplete="off"
+        className="history-filter"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (
+            range.from &&
+            range.to &&
+            new Date(range.from) > new Date(range.to)
+          ) {
+            setError("Der Beginn muss vor dem Ende liegen.");
+            return;
+          }
+          setError(undefined);
+          setExpanded(null);
+          onFilter({
+            from: range.from ? new Date(range.from).toISOString() : "",
+            to: range.to
+              ? new Date(range.to)
+                  .toISOString()
+                  .replace(/\.\d{3}Z$/, ".999999Z")
+              : "",
+          });
+        }}
+      >
+        <div className="form-grid">
+          <Field label="Historie von (Browser-Ortszeit)">
+            <input
+              name="historyFrom"
+              type="datetime-local"
+              step="1"
+              value={range.from}
+              onChange={(e) => setRange({ ...range, from: e.target.value })}
+            />
+          </Field>
+          <Field label="Historie bis (Browser-Ortszeit)">
+            <input
+              name="historyTo"
+              type="datetime-local"
+              step="1"
+              value={range.to}
+              onChange={(e) => setRange({ ...range, to: e.target.value })}
+            />
+          </Field>
+        </div>
+        <div className="toolbar-actions">
+          <button disabled={busy}>Historienzeitraum übernehmen</button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setRange({ from: "", to: "" });
+              setExpanded(null);
+              setError(undefined);
+              onFilter({ from: "", to: "" });
+            }}
+          >
+            Gesamter Zeitraum
+          </button>
+        </div>
+      </form>
+      <ErrorBox error={error} />
+      <div className="table-scroll">
+        <table className="compact-readings">
+          <thead>
+            <tr>
+              <th>Ablesezeitpunkt</th>
+              <th>Zählerstand</th>
+              <th>Verbrauch</th>
+              <th>Status</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data?.readings.map(({ reading: r, consumption }) => (
+              <Fragment key={r.id}>
+                <tr>
+                  <td className="nowrap">{displayDate(r.at)}</td>
+                  <td>
+                    {num(r.value)} {unit}
+                  </td>
+                  <td>
+                    {num(consumption)} {consumption == null ? "" : unit}
+                  </td>
+                  <td>
+                    <Badge active={r.status === "Gültig"}>{r.status}</Badge>
+                  </td>
+                  <td>
+                    <button
+                      className="table-action"
+                      aria-label={`Ablesedetails ${displayDate(r.at)}`}
+                      aria-expanded={expanded === r.id}
+                      onClick={() =>
+                        setExpanded(expanded === r.id ? null : r.id)
+                      }
+                    >
+                      {expanded === r.id ? "Schließen" : "Aufklappen"}
+                    </button>
+                  </td>
+                </tr>
+                {expanded === r.id && (
+                  <tr className="reading-expanded">
+                    <td colSpan={5}>
+                      <div className="reading-detail-grid">
+                        <div>
+                          <h3>Ablesedetails</h3>
+                          <p>
+                            Gespeichert: {displayDate(r.createdAt)}
+                            <br />
+                            Gerät:{" "}
+                            {
+                              data.devices.find(
+                                (d) =>
+                                  d.id ===
+                                  data.installations.find(
+                                    (i) => i.id === r.installationId,
+                                  )?.deviceId,
+                              )?.number
+                            }
+                          </p>
+                          <p>
+                            {r.event}
+                            {r.isRollover ? " · Überlauf" : ""}
+                            <br />
+                            {r.comment}
+                          </p>
+                          {r.reason && <p>Begründung: {r.reason}</p>}
+                          {admin && (
+                            <button onClick={() => onEdit(r)}>
+                              Korrigieren
+                            </button>
+                          )}
+                        </div>
+                        <div>
+                          <h3>Nachweis</h3>
+                          <Documents
+                            readingId={r.id}
+                            documents={data.documents.filter(
+                              (d) => d.readingId === r.id,
+                            )}
+                            canWrite={canWrite}
+                            onSaved={reload}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {!data?.readings.length && !busy && (
+        <p className="empty">Keine Ablesungen im gewählten Zeitraum.</p>
+      )}
+      {paging && (
+        <nav className="reading-pagination" aria-label="Ablesehistorie Seiten">
+          <button
+            disabled={busy || paging.page <= 1}
+            onClick={() => {
+              setExpanded(null);
+              onPage(paging.page - 1);
+            }}
+          >
+            Vorherige 15
+          </button>
+          <span>
+            Seite {paging.page} von {paging.totalPages} · {paging.total}{" "}
+            Einträge
+          </span>
+          <button
+            disabled={busy || paging.page >= paging.totalPages}
+            onClick={() => {
+              setExpanded(null);
+              onPage(paging.page + 1);
+            }}
+          >
+            Nächste 15
+          </button>
+        </nav>
+      )}
+      {data && data.revisions.length > 0 && (
+        <details className="revision-history">
+          <summary>
+            Korrekturhistorie dieser Seite ({data.revisions.length})
+          </summary>
+          {data.revisions.map((r) => (
+            <div key={r.id}>
+              <strong>
+                {displayDate(r.at)} · {r.reason}
+              </strong>
+              <pre>
+                {JSON.stringify(
+                  {
+                    vorher: JSON.parse(r.before),
+                    nachher: JSON.parse(r.after),
+                  },
+                  null,
+                  2,
+                )}
+              </pre>
+            </div>
+          ))}
+        </details>
+      )}
+    </section>
   );
 }
 function ReadingForm({

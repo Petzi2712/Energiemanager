@@ -141,7 +141,7 @@ export function NodeForm({
                 ))}
             </select>
           </Field>
-          {text("number", "Nummer *", true)}
+          {text("number", "ID *", true)}
           {text("name", "Bezeichnung *", true)}
           {text("usage", "Nutzung / Standorttyp")}
           {form.kind === "Site" && (
@@ -420,7 +420,7 @@ export function PointForm({
         }}
       >
         <div className="form-grid">
-          <Field label="Messstellennummer *">
+          <Field label="ID Messstelle *">
             <input
               required
               maxLength={60}

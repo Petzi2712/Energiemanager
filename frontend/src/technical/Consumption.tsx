@@ -42,10 +42,11 @@ const options = {
   Year: "Jahre",
   Total: "Gesamtzeitraum",
 };
-const last30 = () => ({
-  from: localInput(new Date(Date.now() - 30 * 86400000)),
-  to: localInput(),
-});
+const last30 = () => {
+  const end = new Date();
+  const beginning = new Date(end.getTime() - 30 * 86400000);
+  return { from: localInput(beginning), to: localInput(end) };
+};
 
 export function Consumption({
   pointId,
@@ -87,6 +88,7 @@ export function Consumption({
         </button>
       </div>
       <form
+        autoComplete="off"
         onSubmit={(e) => {
           e.preventDefault();
           if (range.from >= range.to) {
@@ -103,6 +105,8 @@ export function Consumption({
               required
               type="datetime-local"
               step="1"
+              name="balanceFrom"
+              autoComplete="off"
               value={range.from}
               onChange={(e) => setRange({ ...range, from: e.target.value })}
             />
@@ -112,6 +116,8 @@ export function Consumption({
               required
               type="datetime-local"
               step="1"
+              name="balanceTo"
+              autoComplete="off"
               value={range.to}
               onChange={(e) => setRange({ ...range, to: e.target.value })}
             />
