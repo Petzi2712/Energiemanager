@@ -304,6 +304,7 @@ export function MeterPanel({
       {canWrite && p.isActive && (
         <ReadingForm point={view} installation={current} onSaved={reload} />
       )}
+      <Consumption pointId={p.id} version={p.version} />
       <ReadingHistory
         data={data}
         unit={p.unit}
@@ -320,7 +321,6 @@ export function MeterPanel({
           setPage(1);
         }}
       />
-      <Consumption pointId={p.id} version={p.version} />
       {remove && (
         <DeleteDialog
           title={`Zähler löschen · ${p.name}`}

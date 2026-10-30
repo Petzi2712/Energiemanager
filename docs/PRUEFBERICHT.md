@@ -1,36 +1,40 @@
-# Prüfbericht – Kataster, Maßnahmen und Berichte v0.6.0
+# Prüfbericht – Jahresverbrauch, Diagramme und neutraler KI-Prompt v0.7.0
 
-Ausschließlich synthetische Testdaten. Vorheriger Stand: [Version 0.5](PRUEFBERICHT-v0.5.md).
+Ausschließlich synthetische Testdaten. Vorheriger Stand: [Version 0.6](PRUEFBERICHT-v0.6.md).
 
 | Prüfung | Ergebnis |
 | --- | --- |
 | Backend Release-Publish, .NET SDK 10.0.403 | Erfolgreich, keine Warnungen oder Fehler |
 | Frontend TypeScript-/Vite-Produktionsbuild | Erfolgreich, auch im Web-Dockerimage |
-| Gemeinsamer API-Lauf auf frischer Datenbank | **91 ausgeführt, 91 bestanden** |
-| Gezielte neue API-Fälle | Alle neun erfolgreich |
-| Gemeinsamer Browserlauf | **13 ausgeführt, 13 bestanden**, Desktop und Smartphoneansicht |
-| Diagramm-/Jahresbilanz- und neue Browserabläufe nach letzter Diagrammanpassung | Vier erneut erfolgreich |
-| Web-Containerimage 0.6.0 | Gebaut; HTML, CSP und Produktionsskript per HTTP geprüft |
-| Upgrade einer 0.5-Bestandskopie | Alte Inhalte und Zeilenzahlen in elf Tabellen per Prüfsumme unverändert; neue Standardwerte korrekt, API 0.6.0 |
-| Vorhandene Dokumente nach Migration | Alle bisherigen Dokumente besitzen Purpose=General und bleiben im allgemeinen Dokumentenbereich zugeordnet |
-| EF-Modell gegen Migration | Keine ausstehenden Modelländerungen |
+| Gemeinsamer API-Lauf auf frischer Datenbank | **102 ausgeführt, 102 bestanden** |
+| Gemeinsamer Browserlauf | **15 ausgeführt, 15 bestanden**, Desktop und Smartphoneansicht |
+| Neue Browserabläufe | Beide erfolgreich, 1440 und 390 Pixel, Europe/Berlin |
+| Zwischenablage und ausgehende Anfragen | Kopierter Text entspricht der erzeugten Ausgabe; während Erstellung/Kopie keine externen Anfragen im Browser |
+| Diagrammbreite | Vollständiges SVG innerhalb der verfügbaren Breite; kein horizontaler Überlauf auf Desktop oder Smartphone |
+| Web-Containerimage 0.7.0 | Gebaut; HTML, CSP und endgültiges Produktionsskript per HTTP geprüft |
+| Update einer 0.6-Bestandskopie | Alte Inhalte und Zeilenzahlen in zwölf Tabellen per Prüfsumme unverändert; API 0.7.0 |
+| EF-Modell gegen Migration | Keine ausstehenden Modelländerungen, keine neue Schema-Migration |
 | NuGet inklusive transitiver Pakete / npm-Laufzeitpakete | Keine bekannten Sicherheitsmeldungen; gesperrter NuGet-Restore erfolgreich |
 | Compose-Konfiguration / Shellsyntax / Patch-Whitespace | Erfolgreich geprüft |
 
-Die neun neuen API-Fälle prüfen einzelne Katasterlöschungen mit Audit, Begründung, Version, verschwundenen Bilanzwerten und gesperrten Dokumenten. Untereinträge und Zählerhistorien verhindern unzulässige Löschungen. Die Bilanzübersicht wird mit mehreren Gebäuden, gleichen Gebäudenamen, getrennten Medien und eingeschränkten Standortrechten geprüft. Maßnahmenstatus und Freitext bleiben gespeichert; veraltete Versionen und unberechtigte Änderungen werden abgewiesen. Maßnahmen-PDFs sind vom allgemeinen Dokumentenbereich getrennt und können gelöscht werden; falsche Dateitypen und fremde Zugriffe werden abgewiesen. Kopien übernehmen keine dokumentierte Umsetzung. Berichtsvorlagen werden angelegt, geändert und gelöscht; Hierarchie, Datum, Medium, Formate, Rollen und Standortfilter werden geprüft.
+Die elf neuen API-Fälle prüfen echte Jahresmengen und den letzten Zählerstand, Gerätefaktoren, Haupt-/Unter-/Unterunterzähler ohne Doppelzählung, getrennte Medien und Messrichtungen, fehlende Jahresrandablesungen, bekannte Nullwerte, Gerätewechsel, historische Umhängungen, Gebäudebereiche, explizite Messstellenverweise und Mengen inzwischen gelöschter Messstellen. Sehr kleine von null verschiedene Verbrauchsmengen bleiben bis zur Promptausgabe erhalten.
 
-Die Kategorie-/Verbraucher-Aufschlüsselung wurde anschließend zusätzlich in beiden neuen Browserabläufen erfolgreich geprüft.
+Der neutrale Prompt wird auf Veränderung durch neue Ablesungen, normierte Intervallmittel, Monatsqualität, Bereichsfilter, fehlende Daten, Zeitraumgrenzen und Kunden-/Standortrechte geprüft. Vertrauliche Testnamen, Adressen, Kontakte, Kennungen und Freitexte fehlen in der Ausgabe. Ein eingeschränkter Standortleser erhält auch nach einer Umhängung keine Intervallmengen aus dem gesperrten Standort. Unzulässige oder extrem zukünftige Datumswerte werden abgewiesen.
 
-Die beiden neuen Browserabläufe auf 1440 und 390 Pixel Breite verwenden einen eigenen Testkunden mit zwei Gebäuden. Sie prüfen Gesamt- und Gebäudekarten, Ring-Voreinstellung, nebeneinanderliegende Karten auf dem Desktop, Maßnahmenstatus, Freitext, echten PDF-Upload und erneutes Aufklappen. Ein Verbraucher wird über den Löschdialog entfernt; Gesamtverbrauch und Baum werden aktualisiert. Danach wird eine individuelle Berichtsvorlage über die Oberfläche angelegt und wieder aufgerufen. Navigation, Zahnrad am Seitenleistenfuß, Eingabehilfen, Seitenausnahmen und horizontale Überbreite werden geprüft.
+Die beiden neuen Browserabläufe verwenden einen eigenen Testkunden mit zwei Gebäuden, einem Haupt-/Unterzähler und einer unabhängigen Messstelle. Sie prüfen 150 kWh Zählerstand gegenüber 300 kWh tatsächlichem Jahresverbrauch bei Faktor 2 und die Gesamtsumme 340 kWh statt einer doppelten Summe mit Unterzähler. Standort-, Gebäude- und Gesamtauswahl, Abschnittsreihenfolge, zunächst geschlossene Konfiguration und das Schließen nach Übernahme werden geprüft. Das Diagramm bleibt vollständig innerhalb der Breite. Anschließend werden Prompt und Kopie erzeugt, private Testangaben ausgeschlossen und ein Gebäudefilter erneut angewendet.
 
-Der Browserlauf zeigte einen Speicherfehler bei neuen Berichtsvorlagen: Die leere interne ID wurde im Formular mitgesendet. Nach Korrektur des Formularpayloads bestanden die neuen Abläufe und der gemeinsame Lauf. Bestehende Tests wurden auf exakte Feldnamen und das jeweils richtige Gebäudediagramm eingegrenzt, da Fragezeichen-Hilfen und mehrere Diagrammkarten dieselben Beschriftungen bzw. Werte enthalten können. Keine fachlichen Prüfungen wurden deaktiviert.
+Die Regressionstests nutzen nun ausdrücklich die Strukturleiste und öffnen die einklappbare Konfiguration vor Änderungen. Die Medien-Vorauswahl der theoretischen Bilanz bevorzugt die Daten des geöffneten Bereichs; eine kundenweite Wasserbilanz verdeckt dadurch keine vorhandenen Stromwerte des ausgewählten Gebäudes. Wiederholte Jahreswerte werden am jeweiligen Anlagenbereich geprüft. Die Datums-Testhilfe verwendet die vom Browser normalisierte Schreibweise bei Sekundenwert 00.
 
-Die Migration wurde auf einer getrennten Kopie des synthetischen 0.5-Prüfbestands ausgeführt. Verglichen wurden alle alten Spalten in Customers, Users, Nodes, Points, Readings, Assignments, Devices, Installations, Documents, Branding und Vehicles. Der Ausgangsbestand blieb unverändert. Die neue Dokumentart wurde ausdrücklich mit General vorbelegt; bestehende Dateien werden dadurch nicht ausgeblendet.
+Der Cloud-Lauf wurde während der Abschlussarbeit durch einen Umgebungsneustart unterbrochen. Die bereits abgeschlossenen 102 API-Ergebnisse und Dateien blieben erhalten. Die lokalen Testdienste wurden wieder gestartet und der gemeinsame Browserlauf anschließend vollständig ausgeführt. Es wurden keine fachlichen Prüfungen deaktiviert.
 
-Ansichten: [Gebäudebilanzen](screenshots/gebaeudebilanzen-v06.png) · [Berichte auf dem Smartphone](screenshots/berichte-smartphone-v06.png).
+Für das Update wurden alle bisherigen Inhalte in Customers, Users, Nodes, Points, Readings, Assignments, Devices, Installations, Documents, Branding, Vehicles und ReportDefinitions verglichen. Die Ausgangsdatenbank blieb unverändert. Neue Berechnungen und Promptausgaben benötigen keine zusätzliche Tabelle.
+
+Ansichten: [Jahreskacheln](screenshots/jahreskacheln-v07.png) · [Verbrauch auf dem Smartphone](screenshots/verbrauch-ohne-scrollen-v07.png).
 
 ## Prüfgrenzen
 
-ASP.NET Core und Vite liefen nativ, PostgreSQL und Mailpit in Docker, der offizielle Azurite-Emulator lokal. Das Web-Dockerimage wurde neu gebaut und per HTTP geprüft. Der vollständige Backend-Docker-Stack wurde in dieser Cloud nicht erneut gebaut; der bereits dokumentierte MCR-Image-Download ist durch den Cloud-Netzwerkfilter eingeschränkt. `scripts/test.sh` führt über Compose jetzt alle 91 API-Fälle aus.
+ASP.NET Core und Vite liefen nativ, PostgreSQL und Mailpit in Docker, der offizielle Azurite-Emulator lokal. Das Web-Dockerimage wurde neu gebaut und per HTTP geprüft. Der vollständige Backend-Docker-Stack wurde in dieser Cloud nicht erneut gebaut; der bereits dokumentierte MCR-Image-Download ist durch den Cloud-Netzwerkfilter eingeschränkt. `scripts/test.sh` verwendet über Compose alle 102 API-Fälle.
 
-Nicht geprüft sind der konkrete Benutzerrechner, physische Mobilgeräte, ARM, Produktivbetrieb oder Lasttests. Die Berichtsseite speichert individuelle Konfigurationen; ausführliche PDF-/Excel-Auswertungsberichte und automatische PDF-Analyse sind eine spätere Ausbaustufe. Maßnahmenstatus und Prozentwerte sind keine nachgewiesene Einsparung. Die Löschung besitzt keine Wiederherstellungsoberfläche; Datenbank, Dateien und Anwendungsschlüssel gemeinsam sichern.
+Nicht geprüft sind der konkrete Benutzerrechner, physische Mobilgeräte, ARM, Produktivbetrieb oder Lasttests. Der erzeugte Prompt wird nicht automatisch an eine KI gesendet und führt keine KI-Analyse aus. Die Qualität einer späteren externen Auswertung wurde nicht bewertet. Neutrale Bezeichnungen lassen Namen und Kennungen weg; sie sind kein Nachweis einer vollständigen Anonymität von Verbrauchsmustern.
+
+Jahreskacheln zeigen tatsächlich erfasste vollständige Intervalle, gegebenenfalls als Teilwert bis zur letzten Ablesung. Die Verbrauchsdiagramme und die Monatsreihe im Prompt können bekannte Intervalle zeitanteilig verteilen; diese Werte bleiben gekennzeichnet und ersetzen keine gemessenen Lastgänge. Aus fehlenden Daten werden weder Nullverbrauch noch Einsparungen oder gesicherte Ursachen abgeleitet.

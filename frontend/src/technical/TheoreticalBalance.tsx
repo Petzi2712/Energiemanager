@@ -94,7 +94,16 @@ export function TheoreticalBalance({
   ].filter((g, i, all) => all.findIndex((x) => key(x) === key(g)) === i);
   const active =
     available.find((g) => key(g) === selection) ||
+    data?.totals.find(
+      (g) => g.role === "Consumption" && g.medium === "Electricity",
+    ) ||
+    data?.totals.find((g) => g.role === "Consumption") ||
+    data?.totals[0] ||
+    available.find(
+      (g) => g.role === "Consumption" && g.medium === "Electricity",
+    ) ||
     available.find((g) => g.role === "Consumption") ||
+    data?.totals[0] ||
     available[0];
   const entries =
     data?.entries.filter((e) => active && key(e) === key(active)) || [];
@@ -166,7 +175,13 @@ export function TheoreticalBalance({
                   const values = new Map<string, number>();
                   for (const e of matching) {
                     const label =
-                      index === 0 ? e.building : groupBy === "category" ? e.category : groupBy === "building" ? e.building : `${e.name} · ${e.number}`;
+                      index === 0
+                        ? e.building
+                        : groupBy === "category"
+                          ? e.category
+                          : groupBy === "building"
+                            ? e.building
+                            : `${e.name} · ${e.number}`;
                     const value =
                       scenario &&
                       e.role === "Consumption" &&

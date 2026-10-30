@@ -1,4 +1,4 @@
-# Kundenkataster und Zähleranlagenbaum – Version 0.6
+# Kundenkataster und Zähleranlagenbaum – Version 0.7
 
 ## Einen Kunden technisch aufnehmen
 
@@ -113,3 +113,11 @@ Untereinträge werden nicht automatisch mitgelöscht. Zuerst die Untereinträge 
 Die Gesamtbilanz und alle aktiven freigegebenen Gebäude stehen gleichzeitig als Diagrammkarten bereit, auch beim Öffnen eines Verbrauchers. Der Ring ist die Voreinstellung. Die darunterstehenden Komponententabelle und Ausgangssumme beziehen sich auf den gewählten Standort bzw. das Gebäude des ausgewählten Eintrags. Die allgemeine Kundenübersicht umfasst nur freigegebene Standorte; Erzeugung und andere Medien bleiben getrennt.
 
 „Mein Konto“ sitzt als Zahnrad neben der Versionsangabe unten in der Seitenleiste. Die Hauptnavigation lautet Kundenkataster, Zähleranlagenbaum, Fuhrpark, Berichte. Eingabefelder zeigen Hinweise und Beispiele über Mouseover; die Fragezeichen an Formularfeldern sind auch per Tastatur fokussierbar.
+
+## Gemessene Jahresübersicht ab Version 0.7
+
+Im Zähleranlagenbaum öffnet „Gesamter Zählerbestand“ die freigegebene Gesamtsicht. Bei Standorten, Gebäuden und Unteranlagen zeigen die Jahreskacheln die jeweiligen Messstellen einschließlich untergeordneter Bereiche. Je Zähler stehen der letzte dokumentierte Stand mit Zeitpunkt und der erfasste Jahresverbrauch. Alte Geräte werden beim letzten Stand als solche gekennzeichnet. „Verbrauch aktualisieren“ liest den Datenstand neu.
+
+Die Gesamtsumme zählt Haupt- und Unterzähler anhand ihrer historischen Zuordnungen nicht doppelt; ein Unterzähler mit Hauptzähler außerhalb des ausgewählten Bereichs zählt im Bereich selbst. Gelöschte Messstellen können mit ihren berechtigten historischen Mengen in der Summe verbleiben. Medien, Einheiten sowie Bezug und Lieferung sind getrennt. Zeiträume ohne passende Randablesungen werden nicht als tatsächlicher Verbrauch interpoliert. Mehr dazu unter [Verbrauch und KI-Prompt](VERBRAUCH-UND-KI-PROMPT.md).
+
+Beim einzelnen Zähler steht „Verbrauch und Unterzählerbilanz“ vor der Ablesehistorie. „Zeitraum und Darstellung anpassen“ öffnet die Konfiguration; nach Übernahme wird sie geschlossen. Alle Balken passen sich der vorhandenen Diagrammbreite an. Nur die Zahl der Datumsbeschriftungen wird bei Bedarf reduziert. Exakte Einzelwerte und Qualitätsmerkmale bleiben in der aufklappbaren Tabelle verfügbar.

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
 import { Badge, ErrorBox, Field } from "../ui";
@@ -58,6 +58,7 @@ export function Consumption({
   const [range, setRange] = useState(last30),
     [applied, setApplied] = useState(range),
     [bucket, setBucket] = useState("Day");
+  const [configOpen, setConfigOpen] = useState(false);
   const [validation, setValidation] = useState<unknown>();
   const q = useQuery({
     queryKey: ["consumption", pointId, version, applied, bucket],
@@ -87,53 +88,71 @@ export function Consumption({
           Letzte 30 Tage
         </button>
       </div>
-      <form
-        autoComplete="off"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (range.from >= range.to) {
-            setValidation("Der Beginn muss vor dem Ende liegen.");
-            return;
-          }
-          setValidation(undefined);
-          setApplied({ ...range });
-        }}
+      <details
+        className="consumption-config"
+        open={configOpen}
+        onToggle={(event) => setConfigOpen(event.currentTarget.open)}
       >
-        <div className="form-grid">
-          <Field label="Beginn (Browser-Ortszeit)">
-            <input
-              required
-              type="datetime-local"
-              step="1"
-              name="balanceFrom"
-              autoComplete="off"
-              value={range.from}
-              onChange={(e) => setRange({ ...range, from: e.target.value })}
-            />
-          </Field>
-          <Field label="Ende (Browser-Ortszeit)">
-            <input
-              required
-              type="datetime-local"
-              step="1"
-              name="balanceTo"
-              autoComplete="off"
-              value={range.to}
-              onChange={(e) => setRange({ ...range, to: e.target.value })}
-            />
-          </Field>
-          <Field label="Balken gruppieren nach">
-            <select value={bucket} onChange={(e) => setBucket(e.target.value)}>
-              {Object.entries(options).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-        <button disabled={q.isFetching}>Zeitraum übernehmen</button>
-      </form>
+        <summary>
+          <span>Zeitraum und Darstellung anpassen</span>
+          <small>
+            {new Date(applied.from).toLocaleString("de-DE")} –{" "}
+            {new Date(applied.to).toLocaleString("de-DE")} ·{" "}
+            {options[bucket as keyof typeof options]}
+          </small>
+        </summary>
+        <form
+          autoComplete="off"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (range.from >= range.to) {
+              setValidation("Der Beginn muss vor dem Ende liegen.");
+              return;
+            }
+            setValidation(undefined);
+            setApplied({ ...range });
+            setConfigOpen(false);
+          }}
+        >
+          <div className="form-grid">
+            <Field label="Beginn (Browser-Ortszeit)">
+              <input
+                required
+                type="datetime-local"
+                step="1"
+                name="balanceFrom"
+                autoComplete="off"
+                value={range.from}
+                onChange={(e) => setRange({ ...range, from: e.target.value })}
+              />
+            </Field>
+            <Field label="Ende (Browser-Ortszeit)">
+              <input
+                required
+                type="datetime-local"
+                step="1"
+                name="balanceTo"
+                autoComplete="off"
+                value={range.to}
+                onChange={(e) => setRange({ ...range, to: e.target.value })}
+              />
+            </Field>
+            <Field label="Balken gruppieren nach">
+              <select
+                value={bucket}
+                onChange={(e) => setBucket(e.target.value)}
+              >
+                {Object.entries(options).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          <button disabled={q.isFetching}>Zeitraum übernehmen</button>
+        </form>
+      </details>
       <ErrorBox error={validation || q.error} />
       {q.isLoading && <p role="status">Verbrauch wird berechnet …</p>}
       {data && (
@@ -229,6 +248,17 @@ export function Consumption({
 }
 
 function ConsumptionChart({ data, bucket }: { data: Series; bucket: string }) {
+  const container = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState(680);
+  useEffect(() => {
+    const node = container.current;
+    if (!node) return;
+    const observer = new ResizeObserver((entries) =>
+      setChartWidth(Math.max(240, Math.floor(entries[0].contentRect.width))),
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
   const [visible, setVisible] = useState([true, true, false]);
   const legends = ["Hauptzähler", "Direkte Unterzähler", "Nicht zugeordnet"];
   const colors = ["#bd650e", "#267f91", "#7c6aaf"];
@@ -243,12 +273,25 @@ function ConsumptionChart({ data, bucket }: { data: Series; bucket: string }) {
   const min = Math.min(0, ...all),
     max = Math.max(0, ...all),
     span = max - min || 1;
-  const width = Math.max(680, data.buckets.length * 58 + 90),
+  const width = chartWidth,
     height = 300,
     top = 28,
     bottom = 235;
   const y = (v: number) => bottom - ((v - min) / span) * (bottom - top),
     step = (width - 90) / Math.max(1, data.buckets.length);
+  const drawnSeries = visible.map((v, i) => (v ? i : -1)).filter((i) => i >= 0);
+  const barWidth = (step * 0.8) / Math.max(1, drawnSeries.length);
+  const tickCount = Math.min(
+    data.buckets.length,
+    Math.max(2, Math.floor((width - 80) / 75)),
+  );
+  const tickIndices = new Set(
+    Array.from({ length: tickCount }, (_, i) =>
+      tickCount <= 1
+        ? 0
+        : Math.round((i * (data.buckets.length - 1)) / (tickCount - 1)),
+    ),
+  );
   const label = (iso: string) =>
     new Date(iso).toLocaleDateString("de-DE", {
       timeZone: data.timeZone,
@@ -284,14 +327,14 @@ function ConsumptionChart({ data, bucket }: { data: Series; bucket: string }) {
         </p>
       )}
       <div
-        className="chart-scroll"
-        tabIndex={0}
-        aria-label="Verbrauchsdiagramm, horizontal scrollbar"
+        className="chart-responsive"
+        ref={container}
+        aria-label="Verbrauchsdiagramm, vollständig in der verfügbaren Breite"
       >
         <svg
           role="img"
           aria-label={`Balkendiagramm des Verbrauchs in ${data.unit}, ${data.buckets.length} Zeitabschnitte`}
-          width={width}
+          width="100%"
           height={height}
           viewBox={`0 0 ${width} ${height}`}
         >
@@ -331,9 +374,14 @@ function ConsumptionChart({ data, bucket }: { data: Series; bucket: string }) {
                   <rect
                     key={j}
                     tabIndex={0}
-                    x={72 + i * step + j * 12}
+                    x={
+                      65 +
+                      i * step +
+                      step * 0.1 +
+                      drawnSeries.indexOf(j) * barWidth
+                    }
                     y={Math.min(y(0), y(value))}
-                    width="10"
+                    width={barWidth * 0.85}
                     height={Math.max(1, Math.abs(y(value) - y(0)))}
                     fill={colors[j]}
                     opacity={j === 0 && b.coverage < 1 ? 0.55 : 1}
@@ -343,25 +391,38 @@ function ConsumptionChart({ data, bucket }: { data: Series; bucket: string }) {
                   </rect>
                 ) : null,
               )}
-              {b.availableConsumption == null && (
-                <text x={84 + i * step} y={y(0) - 7} textAnchor="middle">
+              {b.availableConsumption == null && tickIndices.has(i) && (
+                <text
+                  x={65 + (i + 0.5) * step}
+                  y={y(0) - 7}
+                  textAnchor="middle"
+                >
                   –
                 </text>
               )}
-              <text x={86 + i * step} y="256" textAnchor="middle">
-                {label(b.from)}
-              </text>
-              <text x={86 + i * step} y="275" textAnchor="middle">
-                {b.status === "Unvollständig"
-                  ? "Lücke"
-                  : b.status === "Zeitanteilig"
-                    ? "anteilig"
-                    : ""}
-              </text>
+              {tickIndices.has(i) && (
+                <text x={65 + (i + 0.5) * step} y="256" textAnchor="middle">
+                  {label(b.from)}
+                </text>
+              )}
+              {tickIndices.has(i) && (
+                <text x={65 + (i + 0.5) * step} y="275" textAnchor="middle">
+                  {b.status === "Unvollständig"
+                    ? "Lücke"
+                    : b.status === "Zeitanteilig"
+                      ? "anteilig"
+                      : ""}
+                </text>
+              )}
             </g>
           ))}
         </svg>
       </div>
+      <p className="subtle chart-fit-note">
+        Alle {data.buckets.length} Zeitabschnitte werden dargestellt.
+        Datumsbeschriftungen passen sich der Breite an; Einzelwerte stehen in
+        der aufklappbaren Tabelle.
+      </p>
     </figure>
   );
 }

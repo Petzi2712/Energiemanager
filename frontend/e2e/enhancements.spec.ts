@@ -166,7 +166,7 @@ for (const width of [1440, 390]) {
       .getByRole("button", { name: "Katastereintrag speichern", exact: true })
       .click();
     await expect(
-      page.getByText("27.000 kWh/Jahr", { exact: true }),
+      page.locator(".technical-detail > .panel").first().getByText("27.000 kWh/Jahr", { exact: true }),
     ).toBeVisible();
     await page
       .getByLabel("Foto / PDF hinzufügen (max. 6 MB)", { exact: true })
@@ -212,17 +212,18 @@ for (const width of [1440, 390]) {
     await expect(vehicle).toHaveCount(0);
 
     await navigate(page, width, "Zähleranlagenbaum");
-    const rootButton = page.getByRole("button", {
+    const rootButton = page.locator(".structure-tree").getByRole("button", {
       name: new RegExp("UI Hauptzähler " + suffix),
     });
-    const childButton = page.getByRole("button", {
+    const childButton = page.locator(".structure-tree").getByRole("button", {
       name: new RegExp("UI Unterzähler " + suffix),
     });
     await rootButton.click();
     await expect(
       page.getByRole("img", { name: /Balkendiagramm des Verbrauchs/ }),
     ).toBeVisible();
-    await expect(page.locator(".chart-scroll rect").first()).toBeVisible();
+    await expect(page.locator(".chart-responsive rect").first()).toBeVisible();
+    if (!(await page.getByLabel("Balken gruppieren nach", { exact: true }).isVisible())) await page.locator(".consumption-config > summary").click();
     await page.getByLabel("Balken gruppieren nach", { exact: true }).selectOption("Month");
     await expect
       .poll(
@@ -260,12 +261,13 @@ for (const width of [1440, 390]) {
         .parentPointId,
     ).toBe(root.id);
     await rootButton.click();
+    if (!(await page.getByLabel("Balken gruppieren nach", { exact: true }).isVisible())) await page.locator(".consumption-config > summary").click();
     await page.getByLabel("Balken gruppieren nach", { exact: true }).selectOption("Week");
     await page.evaluate(() =>
       document.querySelector(".consumption-panel")?.scrollIntoView(),
     );
     await expect(page.getByRole("button", { name: "Zeitraum übernehmen", exact: true })).toBeEnabled();
-    await expect(page.locator(".chart-scroll rect").first()).toBeVisible();
+    await expect(page.locator(".chart-responsive rect").first()).toBeVisible();
     await page.locator(".consumption-panel").screenshot({ path: `../artifacts/diagramm-dark-${width}.png` });
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: `../artifacts/verbrauch-dark-${width}.png`, fullPage: true });

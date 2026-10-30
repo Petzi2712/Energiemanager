@@ -63,7 +63,7 @@ for (const width of [1440, 390]) {
     await page.getByRole('checkbox', { name: 'Diagramm mit angenommener Einsparung anzeigen', exact: true }).check();
     await page.locator('.savings-scenario').screenshot({ path: `../artifacts/komponenten-${width}.png` });
     await nav(page, width, 'Zähleranlagenbaum');
-    await page.getByRole('button', { name: new RegExp('V05 Zähler ' + suffix) }).click();
+    await page.locator('.structure-tree').getByRole('button', { name: new RegExp('V05 Zähler ' + suffix) }).click();
     await page.getByRole('button', { name: 'Messstelle bearbeiten', exact: true }).click();
     await expect(page.getByLabel('ID Messstelle *', { exact: true })).toHaveValue(p.number);
     await page.getByRole('button', { name: 'Abbrechen', exact: true }).click();

@@ -13,6 +13,7 @@ import {
 import { NodeForm, PointForm, AssignmentForm } from "./forms";
 import { MeterPanel, Documents } from "./readings";
 import "./technical.css";
+import { MeterOverview } from "./MeterOverview";
 import { TheoreticalBalance } from "./TheoreticalBalance";
 import { ExcelTools } from "./ExcelTools";
 import { DeleteDialog } from "../DeleteDialog";
@@ -32,7 +33,7 @@ export function TechnicalStudio({
     tenant || session.customers[0]?.id || "",
   );
   const [selected, setSelected] = useState<{
-    type: "node" | "point";
+    type: "node" | "point" | "overview";
     id: string;
   } | null>(null);
   const [search, setSearch] = useState("");
@@ -59,16 +60,19 @@ export function TechnicalStudio({
     enabled: !!customer,
   });
   useEffect(() => {
+    if (mode === "meters" && !selected && customer)
+      setSelected({ type: "overview", id: customer });
     if (mode === "kataster" && !selected && q.data?.nodes.length) {
       const site = q.data.nodes.find((n) => n.node.kind === "Site");
       if (site) setSelected({ type: "node", id: site.node.id });
     }
-  }, [q.data, mode, selected]);
+  }, [q.data, mode, selected, customer]);
   const tree = q.data || { nodes: [], points: [] };
   const node = tree.nodes.find((x) => x.node.id === selected?.id);
   function balanceRoot(id: string): string {
-    let current = tree.nodes.find(x => x.node.id === id)?.node;
-    while (current && !["Site","Building"].includes(current.kind)) current = tree.nodes.find(x => x.node.id === current?.parentId)?.node;
+    let current = tree.nodes.find((x) => x.node.id === id)?.node;
+    while (current && !["Site", "Building"].includes(current.kind))
+      current = tree.nodes.find((x) => x.node.id === current?.parentId)?.node;
     return current?.id || id;
   }
   const point = tree.points.find((x) => x.point.id === selected?.id);
@@ -294,6 +298,14 @@ export function TechnicalStudio({
                 Anlagenknoten ziehen, um ihn als Hauptzähler zuzuordnen.
               </p>
             )}
+            {mode === "meters" && (
+              <button
+                className={`tree-overview ${selected?.type === "overview" ? "current" : ""}`}
+                onClick={() => setSelected({ type: "overview", id: customer })}
+              >
+                Gesamter Zählerbestand
+              </button>
+            )}
             <ul className="structure-tree">
               {tree.nodes.filter((x) => !x.node.parentId).map(nodeBranch)}
             </ul>
@@ -305,7 +317,15 @@ export function TechnicalStudio({
             {q.isLoading && <p role="status">Struktur wird geladen …</p>}
           </aside>
           <div className="technical-detail">
-            {mode === "meters" && point && selected?.type === "point" ? (
+            {mode === "meters" && selected?.type === "overview" ? (
+              <MeterOverview
+                customerId={customer}
+                version={tree.points
+                  .map((p) => `${p.point.id}:${p.point.version}`)
+                  .join(",")}
+                onSelect={(id) => setSelected({ type: "point", id })}
+              />
+            ) : mode === "meters" && point && selected?.type === "point" ? (
               <MeterPanel
                 key={point.point.id}
                 view={point}
@@ -346,7 +366,12 @@ export function TechnicalStudio({
                       >
                         Stammdaten bearbeiten
                       </button>
-                      <button className="danger" onClick={() => setDeleting(node.node)}>Katastereintrag löschen</button>
+                      <button
+                        className="danger"
+                        onClick={() => setDeleting(node.node)}
+                      >
+                        Katastereintrag löschen
+                      </button>
                       {node.node.kind !== "Site" && (
                         <button onClick={() => setCopying(node.node)}>
                           Eintrag kopieren
@@ -374,56 +399,26 @@ export function TechnicalStudio({
                   )}
                 </section>
                 {mode === "kataster" && (
-                    <TheoreticalBalance
-                      key={node.node.id}
-                      customerId={customer}
-                      nodeId={balanceRoot(node.node.id)}
-                      canEdit={admin}
-                      version={tree.nodes
-                        .map((n) => `${n.node.id}:${n.node.version}`)
-                        .join(",")}
-                    />
-                  )}
+                  <TheoreticalBalance
+                    key={node.node.id}
+                    customerId={customer}
+                    nodeId={balanceRoot(node.node.id)}
+                    canEdit={admin}
+                    version={tree.nodes
+                      .map((n) => `${n.node.id}:${n.node.version}`)
+                      .join(",")}
+                  />
+                )}
                 {mode === "meters" && (
-                  <section className="panel">
-                    <h2>Zugeordnete Messstellen</h2>
-                    {tree.points
-                      .filter(
-                        (x) =>
-                          x.assignment.nodeId === node.node.id ||
-                          x.point.id === node.node.measuringPointId,
-                      )
-                      .map((p) => (
-                        <button
-                          key={p.point.id}
-                          className="point-link"
-                          onClick={() =>
-                            setSelected({ type: "point", id: p.point.id })
-                          }
-                        >
-                          <span>
-                            <strong>{p.point.name}</strong>
-                            <small>
-                              {media[p.point.medium]} · Gerät {p.device?.number}{" "}
-                              ·{" "}
-                              {p.latestReading
-                                ? `${num(p.latestReading.value)} ${p.point.unit}`
-                                : "Noch keine Ablesung"}
-                            </small>
-                          </span>
-                          <span>→</span>
-                        </button>
-                      ))}
-                    {!tree.points.some(
-                      (x) =>
-                        x.assignment.nodeId === node.node.id ||
-                        x.point.id === node.node.measuringPointId,
-                    ) && (
-                      <p className="subtle">
-                        Diesem Eintrag ist noch keine Messstelle zugeordnet.
-                      </p>
-                    )}
-                  </section>
+                  <MeterOverview
+                    key={node.node.id}
+                    customerId={customer}
+                    nodeId={node.node.id}
+                    version={tree.points
+                      .map((p) => `${p.point.id}:${p.point.version}`)
+                      .join(",")}
+                    onSelect={(id) => setSelected({ type: "point", id })}
+                  />
                 )}
                 <Documents nodeId={node.node.id} canWrite={admin} />
               </>
@@ -476,7 +471,20 @@ export function TechnicalStudio({
           }}
         />
       )}
-      {deleting && <DeleteDialog title="Katastereintrag löschen" path={`/technical/${customer}/nodes/${deleting.id}`} version={deleting.version} description={`„${deleting.name}“ samt Dokumenten und Maßnahmen-Nachweisen löschen. Untereinträge werden nicht automatisch gelöscht. Zählerhistorien bleiben geschützt.`} onClose={() => setDeleting(null)} onDeleted={async () => { setDeleting(null); setSelected(null); await refresh(); }}/>}
+      {deleting && (
+        <DeleteDialog
+          title="Katastereintrag löschen"
+          path={`/technical/${customer}/nodes/${deleting.id}`}
+          version={deleting.version}
+          description={`„${deleting.name}“ samt Dokumenten und Maßnahmen-Nachweisen löschen. Untereinträge werden nicht automatisch gelöscht. Zählerhistorien bleiben geschützt.`}
+          onClose={() => setDeleting(null)}
+          onDeleted={async () => {
+            setDeleting(null);
+            setSelected(null);
+            await refresh();
+          }}
+        />
+      )}
       {copying && (
         <CopyNode
           source={copying}

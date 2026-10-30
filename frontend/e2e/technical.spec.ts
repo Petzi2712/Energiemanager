@@ -3,7 +3,8 @@ function localAt(days: number, minutes = 0) {
   const d = new Date(Date.now() - days * 86400000 + minutes * 60000);
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
     .toISOString()
-    .slice(0, 19);
+    .slice(0, 19)
+    .replace(/:00$/, '');
 }
 for (const width of [1440, 390]) {
   test(`Kataster und Zähler: ${width}px – Anlage, Ablesung, Foto, Korrektur und Tausch`, async ({

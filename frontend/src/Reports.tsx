@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, type Session } from "./api";
 import { Dialog, ErrorBox, Field } from "./ui";
+import { AnalysisPrompt } from "./AnalysisPrompt";
 import { DeleteDialog } from "./DeleteDialog";
 import { media, type Node, type Tree } from "./technical/types";
 
@@ -141,6 +142,7 @@ export function Reports({
           </p>
         )}
       </section>
+      <AnalysisPrompt customerId={customerId} nodes={nodes} templates={q.data || []}/>
       {edit && (
         <ReportForm
           key={edit === "new" ? "new" : edit.id}

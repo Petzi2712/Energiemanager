@@ -1,5 +1,13 @@
 # Architektur und erster Entwicklungsabschnitt
 
+## Ergänzung: tatsächliche Jahresmengen und neutraler Analyseexport v0.7
+
+`MeterAnalytics` lädt freigegebene Messstellen, historische Zuordnungen, Geräteperioden und begrenzte Nachbarablesungen. Jahresmengen verwenden nur vollständig zuordenbare Messintervalle. Die Hierarchiesumme subtrahiert passende Hauptzählerperioden von Unterzählerperioden. Die gleiche Grundlage versorgt Jahreskacheln und Analyseexport. Es ist keine neue Schema-Migration erforderlich.
+
+`AnalysisPrompt` erstellt lokal einen Text über einen autorisierten POST-Endpunkt. Nur kontrollierte Metadaten und neutrale Bezeichnungen werden ausgegeben; Stammdaten und Freitexte gelangen nicht in den Prompt. Zeitanteilige Monatsreihen nutzen die bestehende Intervallrechnung und kennzeichnen Qualität und Lücken. Grenzen: 36 Kalendermonate, 200 Messstellen, 50.000 relevante Ablesungen. Die Erstellung wird auditiert; es gibt keinen ausgehenden KI-Aufruf.
+
+Die Oberfläche zeichnet das gesamte Verbrauchsdiagramm mit ResizeObserver innerhalb der aktuellen Breite und reduziert bei Platzmangel nur die Beschriftungen. Zeitraumkonfiguration und Diagrammwerte sind separat aufklappbar.
+
 ## Ergänzung: Katasterlöschung, Maßnahmen und Berichte v0.6
 
 Katasterknoten erhalten `DeletedAt` und einen globalen Queryfilter. Einzelne Löschungen laufen mit Versionsprüfung, Begründung und Audit in einer Transaktion. Kindknoten, historische Zählerzuordnungen, Fahrzeuge und aktive Berichtsvorlagen verhindern die Löschung. Dokumente werden dabei logisch gesperrt; der bestehende Bereinigungsdienst entfernt ihre Blobs.

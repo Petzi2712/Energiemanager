@@ -63,7 +63,7 @@ for (const width of [1440, 390]) {
     await page.getByRole('button', { name: new RegExp('UI Bilanzgebäude ' + suffix) }).click();
     await expect(page.locator('.theory-total')).toContainText('15.000 kWh/Jahr');
     await nav(page, width, 'Zähleranlagenbaum');
-    await page.getByRole('button', { name: new RegExp('UI Excelzähler ' + suffix + '-1') }).click();
+    await page.locator('.structure-tree').getByRole('button', { name: new RegExp('UI Excelzähler ' + suffix + '-1') }).click();
     await page.getByRole('button', { name: 'Excel-Vorlage / Import', exact: true }).click();
     const firstDownload = page.waitForEvent('download'); await page.getByRole('button', { name: 'Excel-Vorlage herunterladen', exact: true }).click();
     const workbook = await firstDownload; expect(workbook.suggestedFilename()).toContain('XLS-');

@@ -9,6 +9,7 @@ export function fieldHelp(
 ) {
   const name = label.toLowerCase();
   const rules: [RegExp, string][] = [
+    [/analysebeginn|analyseende/, "Kalendertag des Analysezeitraums wählen. Beispiel: 01.01.2026 bis heute. Das Enddatum wird vollständig berücksichtigt; maximal 36 Monate."],
     [
       /e-?mail/,
       "Vollständige E-Mail-Adresse eingeben, z. B. energie@beispiel.de.",
