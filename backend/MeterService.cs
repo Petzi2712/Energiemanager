@@ -54,14 +54,14 @@ public static class MeterService
         Require(value is >= 0 and <= 1000000000000000m && decimal.Round(value, i.Decimals) == value && (i.RegisterLimit == null || value < i.RegisterLimit), "Zählerstand außerhalb des Wertebereichs oder zu viele Nachkommastellen.");
         Require(value % i.Resolution == 0, "Der Zählerstand passt nicht zur konfigurierten Zählerauflösung.");
     }
-    public static async Task<string> ValidateReading(AppDbContext db, MeasuringPoint p, MeterInstallation i, ReadingInput input, Guid? exclude = null)
+    public static async Task<string> ValidateReading(AppDbContext db, MeasuringPoint p, MeterInstallation i, ReadingInput input, Guid? exclude = null, IReadOnlyList<MeterReading>? source = null)
     {
         Value(input.Value, i);
         var at = input.At.ToUniversalTime();
         Require(at <= DateTimeOffset.UtcNow.AddMinutes(5) && at >= i.ValidFrom && (i.ValidTo == null || at <= i.ValidTo), "Der Ablesezeitpunkt liegt außerhalb der Geräteperiode oder in der Zukunft.");
         Require(input.Comment != null && input.Reason != null && input.Event != null && input.Comment.Length <= 2000 && input.Reason.Length <= 2000 && Events.Contains(input.Event), "Ungültiger Ereignistyp oder zu langer Kommentar.");
-        Require(!await db.Readings.AnyAsync(x => x.InstallationId == i.Id && x.At == at && x.Id != exclude), "Zu diesem Zeitpunkt existiert bereits ein Zählerstand.", 409);
-        var rows = await db.Readings.Where(x => x.InstallationId == i.Id && x.Id != exclude).OrderBy(x => x.At).ToListAsync();
+        Require(source == null ? !await db.Readings.AnyAsync(x => x.InstallationId == i.Id && x.At == at && x.Id != exclude) : !source.Any(x => x.InstallationId == i.Id && x.At == at && x.Id != exclude), "Zu diesem Zeitpunkt existiert bereits ein Zählerstand.", 409);
+        var rows = source == null ? await db.Readings.Where(x => x.InstallationId == i.Id && x.Id != exclude).OrderBy(x => x.At).ToListAsync() : source.Where(x => x.InstallationId == i.Id && x.Id != exclude).OrderBy(x => x.At).ToList();
         var previous = rows.LastOrDefault(x => x.At < at); var following = rows.FirstOrDefault(x => x.At > at);
         var candidate = new MeterReading { At = at, Value = input.Value, IsRollover = input.IsRollover };
         var warnings = new List<string>();
@@ -73,17 +73,10 @@ public static class MeterService
         else if (previous != null && input.Value < previous.Value)
             throw new TechnicalFault(400, i.RegisterLimit.HasValue ? "Der Zählerstand ist niedriger als der vorherige. Überlauf ausdrücklich bestätigen oder Zählertausch erfassen." : "Der Zählerstand ist niedriger als der vorherige. Zählertausch separat erfassen oder Eingabe korrigieren.");
         if (following != null) Require(Delta(candidate, following, i) >= 0 && (!following.IsRollover || following.Value < candidate.Value), "Der Wert widerspricht der nachfolgenden Ablesung.");
-        if (previous != null)
+        if (previous != null && p.MaxDailyConsumption.HasValue)
         {
             var daily = Delta(previous, candidate, i) / (decimal)(at - previous.At).TotalDays;
             if (p.MaxDailyConsumption.HasValue && daily > p.MaxDailyConsumption) warnings.Add("Der Verbrauch überschreitet die konfigurierte Tagesgrenze.");
-            var history = rows.Where(x => x.At <= previous.At).ToList();
-            if (history.Count >= 4)
-            {
-                var rates = history.Zip(history.Skip(1), (a, b) => Delta(a, b, i) / (decimal)(b.At - a.At).TotalDays).Order().ToArray();
-                var median = rates[rates.Length / 2];
-                if (median > 0 && daily > median * 3) warnings.Add("Der Tagesverbrauch liegt über dem Dreifachen des historischen Medianwerts.");
-            }
         }
         Require(warnings.Count == 0 || input.ConfirmWarning && input.Reason!.Trim().Length >= 5, string.Join(" ", warnings) + " Bitte prüfen und mit Begründung bestätigen.", 422);
         return warnings.Count > 0 ? "Auffällig" : "Gültig";

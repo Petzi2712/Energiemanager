@@ -1,4 +1,4 @@
-# Kundenkataster und Zähleranlagenbaum – Version 0.3
+# Kundenkataster und Zähleranlagenbaum – Version 0.4
 
 ## Einen Kunden technisch aufnehmen
 
@@ -31,7 +31,7 @@ Kundenbenutzer wählen „Zählerablesung“, dann ihre freigegebene Messstelle.
 Geprüft werden Wertebereich, maximal sechs Dezimalstellen, konfigurierte Auflösung, Geräteperiode, Zukunftsdatum, doppelte Einträge sowie Vorgänger und Nachfolger. Ein Wert darf keiner späteren vorhandenen Ablesung widersprechen. Unbekannte Einheiten oder unpassende Haupt-/Unterzählerkonfigurationen werden abgelehnt.
 
 - **Gültig:** speicherbar.
-- **Auffällig:** Tagesgrenze überschritten oder mehr als das Dreifache des historischen Medians bei mindestens drei geeigneten früheren Intervallen. Speichern erst nach ausdrücklicher Bestätigung und einer Begründung mit mindestens fünf Zeichen.
+- **Auffällig:** Eine ausdrücklich konfigurierte Tagesgrenze wird überschritten. Speichern erst nach ausdrücklicher Bestätigung und einer Begründung mit mindestens fünf Zeichen. Die automatische Medianwarnung ist entfernt; ohne eingetragene Grenze gibt es keine Verbrauchsspitzenwarnung.
 - **Ungültig:** abgelehnt. Es wird kein fachlich ungültiger Messwert gespeichert.
 
 Fallende Stände werden grundsätzlich abgelehnt. Ein Überlauf benötigt einen konfigurierten Überlaufmodulus, die explizite Überlaufmarkierung und eine bestätigte Begründung. Der Modulus ist der Wert, bei dem das Register auf null springt, beispielsweise 100.000 bei einem Register von 0 bis 99.999. Überläufe werden nie automatisch als Tatsache unterstellt.
@@ -92,3 +92,6 @@ Der Server prüft Kunde, Standort, Medium, Einheit, Messrichtung und Kreisfreihe
 „Fuhrpark“ steht direkt unter dem Kundenkataster. Kundenauswahl in der fixierten Kopfzeile verwenden. Die Systemadministration legt Fahrzeuge an, bearbeitet deren Attribute und löscht sie mit protokolliertem Grund. Standortzuordnung ist verpflichtend; Kundenbenutzer und Leser sehen ausschließlich ihre freigegebenen Fahrzeuge. Tank-/Ladevorgänge und Fahrleistungsanalysen sind noch nicht enthalten.
 
 „Mein Konto → Logo und Anmeldebildschirm“ ist für die Systemadministration verfügbar. Das Logo (PNG/JPEG bis 2 MB) und der mehrzeilige Leitspruch gelten anwendungsweit, einschließlich des Loginbildschirms. Das persönliche Farbschema wird unter „Darstellung → Darkmodus aktivieren“ gespeichert. Die Kopfzeile mit Kundenauswahl und Benutzer bleibt beim Scrollen sichtbar.
+
+
+Ab Version 0.4 sind die theoretische Gebäude-/Standortbilanz und geschützte Excel-Ablesevorlagen ergänzt. Siehe [Bilanz und Excel](BILANZ-UND-EXCEL.md).

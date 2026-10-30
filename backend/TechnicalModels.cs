@@ -28,6 +28,9 @@ public class TechnicalNode
     public string TimeZone { get; set; } = "Europe/Berlin";
     public string AssetType { get; set; } = "";
     public string AssetRole { get; set; } = "Consumption";
+    public decimal? AnnualEnergyValue { get; set; }
+    public string AnnualEnergyUnit { get; set; } = "kWh";
+    public string AnnualEnergyMedium { get; set; } = "Electricity";
     public string Manufacturer { get; set; } = "";
     public string Model { get; set; } = "";
     public int Quantity { get; set; } = 1;
@@ -178,6 +181,8 @@ public partial class AppDbContext
         b.Entity<TechnicalNode>().HasOne<TechnicalNode>().WithMany().HasForeignKey(x => new { x.CustomerId, x.ParentId }).HasPrincipalKey(x => new { x.CustomerId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         b.Entity<TechnicalNode>().HasIndex(x => new { x.CustomerId, x.Number }).IsUnique();
         b.Entity<TechnicalNode>().Property(x => x.Version).IsConcurrencyToken();
+        b.Entity<TechnicalNode>().Property(x => x.AnnualEnergyUnit).HasDefaultValue("kWh");
+        b.Entity<TechnicalNode>().Property(x => x.AnnualEnergyMedium).HasDefaultValue("Electricity");
         var custom = b.Entity<TechnicalNode>().Property(x => x.CustomFields).HasColumnType("jsonb")
             .HasConversion(v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null), v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(v, (System.Text.Json.JsonSerializerOptions?)null)!);
         custom.Metadata.SetValueComparer(new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<Dictionary<string, string>>(

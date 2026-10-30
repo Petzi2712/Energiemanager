@@ -1,5 +1,17 @@
 # Architektur und erster Entwicklungsabschnitt
 
+## Ergänzung: theoretische Jahresbilanz und XLSX v0.4
+
+`TechnicalNode` erhält eine optionale Jahresmenge sowie Medium/Einheit. `TheoreticalBalance` bildet Gebäude-/Standortbilanzen aus aktiven Teilbäumen. Ein expliziter Gesamtansatz ersetzt gleichartige untergeordnete Ansätze. MWh werden normalisiert; Medien, Volumina und Energierollen bleiben getrennt. Fehlende Werte werden benannt. Die Oberfläche zeigt Kreis-, Ring- oder Balkendiagramme und Datenquellen; Einsparszenarien sind ausdrücklich angenommene Prozentsätze.
+
+`MeterExcel` erzeugt geschützte XLSX-Dateien über ClosedXML 0.105.0. Nur Datums-/Zählerstandszellen sind entsperrt. Eine Data-Protection-Bindung authentifiziert feste Felder, Kunde, Messstelle, Installation und Zeitzone. Die sichtbaren Nummern sind keine Import-Schlüssel. ZIPs werden im Speicher entpackt und begrenzt; Makros, externe Verknüpfungen, Formeln, veränderte Vorlagenfelder und fremde Eingabebereiche werden abgewiesen.
+
+Die Importvorschau schreibt keine Ablesungen. Sie prüft alle Kandidaten gegen die gemeinsame zeitliche Reihe aus vorhandenen und neuen Ständen. Ein an Benutzer, Datei-Hashes und Messstellenversionen gebundenes Vorschautoken gilt 30 Minuten. Die Übernahme prüft erneut und speichert alle gültigen Ablesungen in einer serialisierbaren Transaktion. Fehler verhindern den ganzen Stapel; identische Wiederholungen werden übersprungen. Es gibt keine implizite Überschreibung vorhandener Werte. Datei-/Zeilenbezug und Benutzer werden auditiert.
+
+Die automatische Medianregel entfällt vollständig. Ein Tagesverbrauch wird für Warnungen nur bei ausdrücklich konfigurierter Tagesgrenze berechnet. Wertebereich, Reihenfolge, Geräteperiode, Auflösung und explizite Überläufe werden weiterhin geprüft. Benutzer-/Standortrechte gelten auch für XLSX und ZIP.
+
+Die vierte Migration ergänzt die bestehende Datenbank. Eine Kopie des echten 0.3-Prüfbestands wurde auf 0.4 aktualisiert und anhand der alten Inhalte in elf Tabellen geprüft. Details: [Bilanz und Excel](BILANZ-UND-EXCEL.md) sowie [Prüfbericht](PRUEFBERICHT.md).
+
 ## Ergänzung: Verwaltung und Verbrauchsreihen v0.3
 
 `WorkspaceEndpoints` ergänzt datenbankgespeichertes globales Branding, ein persönliches Darkmodus-Flag am Benutzer und kunden-/standortgebundene Fahrzeuge. Die Systemadministration darf Logos, Leitspruch und Fahrzeugstammdaten ändern. Logo-PNGs werden geprüft, normalisiert und metadatenfrei als kleine Binärdaten in PostgreSQL gespeichert. Logo und Leitspruch sind für den Login öffentlich lesbar. Mutationen erfordern Sitzung und CSRF; Branding und Fahrzeuge besitzen Versionszähler.

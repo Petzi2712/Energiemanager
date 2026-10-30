@@ -5,6 +5,7 @@ import { Badge, Dialog, ErrorBox, Field } from "../ui";
 import { DeviceFields, type DeviceForm } from "./forms";
 import { DeleteDialog } from "../DeleteDialog";
 import { Consumption } from "./Consumption";
+import { ExcelTools } from "./ExcelTools";
 import {
   events,
   localInput,
@@ -232,6 +233,13 @@ export function MeterPanel({
           </div>
         </dl>
         <div className="toolbar-actions">
+          <ExcelTools
+            single
+            customerId={p.customerId}
+            points={[view]}
+            canWrite={canWrite}
+            onImported={reload}
+          />
           {admin && (
             <>
               <button onClick={onEdit}>Messstelle bearbeiten</button>

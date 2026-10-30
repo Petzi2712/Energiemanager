@@ -13,6 +13,8 @@ import {
 import { NodeForm, PointForm, AssignmentForm } from "./forms";
 import { MeterPanel, Documents } from "./readings";
 import "./technical.css";
+import { TheoreticalBalance } from "./TheoreticalBalance";
+import { ExcelTools } from "./ExcelTools";
 
 export function TechnicalStudio({
   session,
@@ -52,6 +54,12 @@ export function TechnicalStudio({
     queryFn: () => api<Tree>(`/technical/${customer}/tree`),
     enabled: !!customer,
   });
+  useEffect(() => {
+    if (mode === "kataster" && !selected && q.data?.nodes.length) {
+      const site = q.data.nodes.find((n) => n.node.kind === "Site");
+      if (site) setSelected({ type: "node", id: site.node.id });
+    }
+  }, [q.data, mode, selected]);
   const tree = q.data || { nodes: [], points: [] };
   const node = tree.nodes.find((x) => x.node.id === selected?.id);
   const point = tree.points.find((x) => x.point.id === selected?.id);
@@ -243,6 +251,17 @@ export function TechnicalStudio({
           </div>
         )}
       </section>
+      {mode === "meters" && customer && (
+        <div className="excel-toolbar">
+          <ExcelTools
+            key={customer}
+            customerId={customer}
+            points={tree.points}
+            canWrite={session.role !== "Reader"}
+            onImported={refresh}
+          />
+        </div>
+      )}
       {!customer ? (
         <p>Keine Kundenfreigabe vorhanden.</p>
       ) : (
@@ -339,6 +358,17 @@ export function TechnicalStudio({
                     </div>
                   )}
                 </section>
+                {mode === "kataster" &&
+                  ["Site", "Building"].includes(node.node.kind) && (
+                    <TheoreticalBalance
+                      key={node.node.id}
+                      customerId={customer}
+                      nodeId={node.node.id}
+                      version={tree.nodes
+                        .map((n) => `${n.node.id}:${n.node.version}`)
+                        .join(",")}
+                    />
+                  )}
                 {mode === "meters" && (
                   <section className="panel">
                     <h2>Zugeordnete Messstellen</h2>
@@ -509,29 +539,42 @@ function NodeDetails({ view }: { view: NodeView }) {
             </div>
           ))}
       </dl>
-      {n.kind === "ConsumerAsset" && (
+      {n.annualEnergyValue != null ? (
         <div className="estimate-box">
-          <strong>
-            Rechnerische Schätzung ·{" "}
-            {n.assetRole === "Generation"
-              ? "Erzeugung"
-              : n.assetRole === "Both"
-                ? "Energieumsatz"
-                : "Verbrauch"}
-          </strong>
+          <strong>Vorgegebener theoretischer Jahreswert</strong>
           <p>
-            {num(n.quantity)} Stück × {num(n.systemPowerW ?? n.ratedPowerW)} W ={" "}
-            {num(view.estimatedPowerKw)} kW
-          </p>
-          <p>
-            {num(n.annualHours)} h/Jahr × Lastfaktor {num(n.loadFactor)} →{" "}
-            <strong>{num(view.estimatedAnnualKwh)} kWh/Jahr</strong>
+            {num(n.annualEnergyValue)} {n.annualEnergyUnit}/Jahr
           </p>
           <small>
-            Aus technischen Stammdaten berechnet. Kein gemessener
-            Energieverbrauch oder Ertrag.
+            Dieser Gesamtansatz ersetzt gleichartige Unterwerte in der
+            Jahresbilanz.
           </small>
         </div>
+      ) : (
+        n.kind === "ConsumerAsset" && (
+          <div className="estimate-box">
+            <strong>
+              Rechnerische Schätzung ·{" "}
+              {n.assetRole === "Generation"
+                ? "Erzeugung"
+                : n.assetRole === "Both"
+                  ? "Energieumsatz"
+                  : "Verbrauch"}
+            </strong>
+            <p>
+              {num(n.quantity)} Stück × {num(n.systemPowerW ?? n.ratedPowerW)} W
+              = {num(view.estimatedPowerKw)} kW
+            </p>
+            <p>
+              {num(n.annualHours)} h/Jahr × Lastfaktor {num(n.loadFactor)} →{" "}
+              <strong>{num(view.estimatedAnnualKwh)} kWh/Jahr</strong>
+            </p>
+            <small>
+              Aus technischen Stammdaten berechnet. Kein gemessener
+              Energieverbrauch oder Ertrag.
+            </small>
+          </div>
+        )
       )}
     </>
   );

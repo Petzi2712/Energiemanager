@@ -23,6 +23,9 @@ export type Node = {
   timeZone: string;
   assetType: string;
   assetRole: string;
+  annualEnergyValue: number | null;
+  annualEnergyUnit: string;
+  annualEnergyMedium: string;
   manufacturer: string;
   model: string;
   quantity: number;
@@ -201,6 +204,9 @@ export const emptyNode: Omit<Node, 'id' | 'customerId'> = {
   timeZone: 'Europe/Berlin',
   assetType: '',
   assetRole: 'Consumption',
+  annualEnergyValue: null,
+  annualEnergyUnit: 'kWh',
+  annualEnergyMedium: 'Electricity',
   manufacturer: '',
   model: '',
   quantity: 1,

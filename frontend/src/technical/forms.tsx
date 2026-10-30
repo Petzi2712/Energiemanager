@@ -236,6 +236,71 @@ export function NodeForm({
               {numeric("loadFactor", "Lastfaktor (0 bis 1)", false, 1)}
             </>
           )}
+          <div className="full annual-input">
+            <h3>Theoretischer Jahresbedarf / Jahresertrag</h3>
+            <p className="subtle">
+              Optionaler Gesamtansatz für diesen Eintrag. Ohne Jahreswert wird
+              bei Hardware die elektrische Energie aus Leistung und
+              Betriebsstunden geschätzt. Ein Gesamtansatz ersetzt gleichartige
+              Unterwerte.
+            </p>
+          </div>
+          {numeric(
+            "annualEnergyValue",
+            "Vorgegebene Jahresmenge (optional)",
+            true,
+          )}
+          {form.kind !== "ConsumerAsset" && (
+            <Field label="Energierolle des Jahresansatzes">
+              <select
+                value={form.assetRole}
+                onChange={(e) =>
+                  setForm({ ...form, assetRole: e.target.value })
+                }
+              >
+                <option value="Consumption">Verbraucher</option>
+                <option value="Generation">Erzeuger</option>
+                <option value="Both">
+                  Verbraucher und Erzeuger (ungeklärt)
+                </option>
+              </select>
+            </Field>
+          )}
+          <Field label="Energieträger der Jahresmenge">
+            <select
+              value={form.annualEnergyMedium}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  annualEnergyMedium: e.target.value,
+                  annualEnergyUnit: e.target.value === "Water" ? "m³" : "kWh",
+                })
+              }
+            >
+              {Object.entries({ ...media, Other: "Sonstige" }).map(
+                ([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ),
+              )}
+            </select>
+          </Field>
+          <Field label="Einheit der Jahresmenge">
+            <select
+              value={form.annualEnergyUnit}
+              onChange={(e) =>
+                setForm({ ...form, annualEnergyUnit: e.target.value })
+              }
+            >
+              {(form.annualEnergyMedium === "Other"
+                ? ["kWh", "MWh", "m³", "L"]
+                : units[form.annualEnergyMedium]
+              ).map((u) => (
+                <option key={u}>{u}</option>
+              ))}
+            </select>
+          </Field>
           <label className="field full">
             <span>Technische Bemerkungen</span>
             <textarea
@@ -480,7 +545,7 @@ export function PointForm({
               }
             />
           </Field>
-          <Field label={`Plausibilitätsgrenze (${form.unit}/Tag, optional)`}>
+          <Field label={`Tagesgrenze (${form.unit}/Tag, optional)`}>
             <input
               type="number"
               min="0"

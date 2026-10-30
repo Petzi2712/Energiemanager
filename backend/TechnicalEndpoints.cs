@@ -76,6 +76,7 @@ public static class TechnicalEndpoints
     {
         Require(Kinds.Contains(n.Kind) && !string.IsNullOrWhiteSpace(n.Name) && !string.IsNullOrWhiteSpace(n.Number), "Typ, Bezeichnung und Nummer sind erforderlich.");
         Require(n.AssetRole is "Consumption" or "Generation" or "Both", "Energierolle muss Verbraucher, Erzeuger oder beides sein.");
+        Require(n.AnnualEnergyValue is not < 0 && TheoreticalBalance.Units.TryGetValue(n.AnnualEnergyMedium, out var annualUnits) && annualUnits.Contains(n.AnnualEnergyUnit), "Jahresmenge und zum Energieträger passende Einheit angeben.");
         Require(n.Number.Length <= 60 && n.Name.Length <= 200, "Nummer oder Bezeichnung zu lang.");
         foreach (var p in typeof(TechnicalNode).GetProperties().Where(x => x.PropertyType == typeof(decimal) || x.PropertyType == typeof(decimal?)))
             if (p.GetValue(n) is decimal value) Require(Math.Abs(value) <= 1000000000000000m && decimal.Round(value, 6) == value, "Zahlen dürfen maximal sechs Nachkommastellen und einen Betrag von höchstens 10¹⁵ enthalten.");

@@ -699,6 +699,22 @@ namespace Energy.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("AnnualEnergyMedium")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Electricity");
+
+                    b.Property<string>("AnnualEnergyUnit")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("kWh");
+
+                    b.Property<decimal?>("AnnualEnergyValue")
+                        .HasPrecision(24, 6)
+                        .HasColumnType("numeric(24,6)");
+
                     b.Property<decimal>("AnnualHours")
                         .HasPrecision(24, 6)
                         .HasColumnType("numeric(24,6)");
