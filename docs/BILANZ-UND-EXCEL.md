@@ -1,4 +1,4 @@
-# Theoretische Jahresbilanz und Ableseimport – Version 0.5
+# Theoretische Jahresbilanz und Ableseimport – Version 0.6
 
 ## Jahresbilanz im Kundenkataster
 
@@ -13,6 +13,8 @@ MWh werden in kWh umgerechnet. Strom, Wärme, Gas, Wasser und sonstige Medien bl
 
 Ein übergeordneter Jahres-Gesamtansatz ersetzt gleichartige Unterwerte desselben Mediums, derselben Einheit und Energierolle. So werden ein Anlagen-Gesamtwert und dessen Einzelverbraucher nicht doppelt addiert. Andere Medien bleiben zusätzlich sichtbar. Die Anzahl enthaltener Unterwerte wird angezeigt. Fehlende Hardwaredaten werden benannt; sie werden nicht als Nullverbrauch ausgegeben. Ein bewusst eingetragener Nullwert zählt dagegen als Angabe.
 
+Gesamtverbrauch aller freigegebenen Standorte und jedes aktive Gebäude werden gemeinsam angezeigt. Auf großen Bildschirmen stehen die Karten nebeneinander und umbrechen bei Platzmangel. Ohne passende Jahreswerte erscheint ein Hinweis. Der ausgewählte Standort bzw. das Gebäude steuert die Komponententabelle; die Diagrammübersicht bleibt kundenweit. Standard ist das Ringdiagramm.
+
 „Diagrammart“ wechselt zwischen Kreis, Ring und Balken. Die Aufschlüsselung ist nach Kategorie, Anlage/Verbraucher oder Gebäude wählbar. Die Wertetabelle enthält die Datenquellen.
 
 ## Einsparung je Komponente
@@ -22,6 +24,8 @@ Unter der Verbrauchsbilanz die gewünschten Komponenten ankreuzen. Für jeden be
 Die Systemadministration speichert die Prozentwerte über „Einsparannahmen speichern“. Sie sind auch im Katasterformular als „Angenommene Einsparung (%)“ bearbeitbar und bleiben nach einem Neustart erhalten. Gleichzeitige Änderungen werden als Konflikt gemeldet. Die Auswahl der Komponenten und der Diagrammzustand gehören nur zur aktuellen Ansicht. Leser können Komponenten mit ihren gespeicherten Annahmen vergleichen.
 
 „Diagramm mit angenommener Einsparung anzeigen“ zeigt die verbleibende Jahresmenge. Der ursprüngliche Gesamtwert bleibt als Ausgangsbilanz ausgewiesen. Es werden nur die tatsächlich in der Bilanz enthaltenen Ansätze angeboten; durch einen Gesamtansatz abgedeckte Unterwerte erscheinen dort nicht zusätzlich. Einsparszenarien sind Planungsannahmen und keine gemessenen oder nachgewiesenen Einsparungen.
+
+Die Spalte „Maßnahme umgesetzt“ dokumentiert die tatsächliche Umsetzung. Aufklappen ermöglicht Freitext und private PDF-Nachweise. Status und Text ausdrücklich speichern. Der Status verändert weder Ausgangsverbrauch noch die fachliche Einstufung der Prozentannahmen.
 
 ## Vorlagen herunterladen
 

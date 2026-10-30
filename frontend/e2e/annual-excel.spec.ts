@@ -46,17 +46,18 @@ for (const width of [1440, 390]) {
     await nav(page, width, 'Kundenkataster');
     await page.getByRole('button', { name: new RegExp('UI Bilanzgebäude ' + suffix) }).click();
     await expect(page.locator('.theory-total')).toContainText('10.000 kWh/Jahr');
-    await expect(page.getByRole('img', { name: 'Kreisdiagramm der theoretischen Jahresbilanz' })).toBeVisible();
+    await expect(page.getByLabel('Diagrammart', { exact: true })).toHaveValue('Donut');
+    await expect(page.locator('.building-chart-grid .theory-hole').first()).toBeVisible();
     await page.getByLabel('Diagrammart', { exact: true }).selectOption('Bar');
-    await expect(page.getByRole('img', { name: 'Balkendiagramm der theoretischen Jahresbilanz' })).toBeVisible();
+    await expect(page.locator('.building-chart-grid').getByRole('img', { name: 'Balkendiagramm der theoretischen Jahresbilanz' }).first()).toBeVisible();
     await page.getByLabel('Diagrammart', { exact: true }).selectOption('Donut');
-    await page.getByLabel('Verbrauch aufschlüsseln nach').selectOption('name');
-    await page.locator('.theory-chart').screenshot({ path: `../artifacts/theory-${width}.png` });
+    await page.getByLabel('Verbrauch aufschlüsseln nach', { exact: true }).selectOption('name');
+    await page.locator('.building-chart-grid .theory-chart').first().screenshot({ path: `../artifacts/theory-${width}.png` });
     await page.getByRole('button', { name: '+ Untereintrag anlegen', exact: true }).click();
     await page.getByLabel('Strukturtyp', { exact: true }).selectOption('ConsumerAsset');
     await page.getByLabel('ID *', { exact: true }).fill('J-' + suffix);
     await page.getByLabel('Bezeichnung *', { exact: true }).fill('UI Jahresbedarf ' + suffix);
-    await page.getByLabel('Vorgegebene Jahresmenge (optional)').fill('5000');
+    await page.getByLabel('Vorgegebene Jahresmenge (optional)', { exact: true }).fill('5000');
     await page.getByRole('button', { name: 'Katastereintrag speichern', exact: true }).click();
     await expect(page.getByText('5.000 kWh/Jahr', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: new RegExp('UI Bilanzgebäude ' + suffix) }).click();
@@ -68,7 +69,7 @@ for (const width of [1440, 390]) {
     const workbook = await firstDownload; expect(workbook.suggestedFilename()).toContain('XLS-');
     const source = resolve(`../artifacts/template-${suffix}.xlsx`), target = resolve(`../artifacts/filled-${suffix}.xlsx`);
     await workbook.saveAs(source); fillExcel(source, target);
-    await page.getByLabel('Ausgefüllte Excel-/CSV-Dateien / ZIP auswählen').setInputFiles(target);
+    await page.getByLabel('Ausgefüllte Excel-/CSV-Dateien / ZIP auswählen', { exact: true }).setInputFiles(target);
     await page.getByRole('button', { name: 'Dateien prüfen', exact: true }).click();
     await expect(page.getByText('2 neue Werte · 0 identische Werte · 0 Fehler · 0 Grenzwertwarnungen')).toBeVisible();
     await page.getByRole('button', { name: 'Geprüfte Ablesungen importieren', exact: true }).click();
@@ -82,7 +83,7 @@ for (const width of [1440, 390]) {
     const archive = await zipDownload; const zipSource = resolve(`../artifacts/templates-${suffix}.zip`), zipTarget = resolve(`../artifacts/filled-${suffix}.zip`);
     await archive.saveAs(zipSource); fillExcel(zipSource, zipTarget, true);
     // Beide Dateien enthalten weitere Ablesungen nach den bisher importierten Ständen.
-    await page.getByLabel('Ausgefüllte Excel-/CSV-Dateien / ZIP auswählen').setInputFiles(zipTarget);
+    await page.getByLabel('Ausgefüllte Excel-/CSV-Dateien / ZIP auswählen', { exact: true }).setInputFiles(zipTarget);
     await page.getByRole('button', { name: 'Dateien prüfen', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Importvorschau', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Geprüfte Ablesungen importieren' })).toBeEnabled();

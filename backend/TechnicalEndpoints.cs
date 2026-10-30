@@ -26,7 +26,7 @@ public static class TechnicalEndpoints
                 copy.Id = Guid.NewGuid(); copy.ParentId = original.Id == id ? input.ParentId : copies[original.ParentId!.Value];
                 copy.Number = original.Id == id ? input.Number : original.Number[..Math.Min(original.Number.Length, 45)] + "-K" + Guid.NewGuid().ToString("N")[..8];
                 copy.Name = original.Id == id ? input.Name : original.Name;
-                copy.MeasuringPointId = null; copy.Version = 1; copy.CreatedAt = copy.UpdatedAt = DateTimeOffset.UtcNow;
+                copy.MeasuringPointId = null; copy.DeletedAt = null; copy.MeasureImplemented = false; copy.MeasureNotes = ""; copy.Version = 1; copy.CreatedAt = copy.UpdatedAt = DateTimeOffset.UtcNow;
                 await ValidateNode(copy, db); db.Nodes.Add(copy); await db.SaveChangesAsync(); copies[original.Id] = copy.Id;
             }
             Security.Audit(db, c, "Kataster.Kopiert", copies[id].ToString(), customerId, JsonSerializer.Serialize(new { sourceId = id, targetParentId = input.ParentId, copied = copies }));
@@ -51,7 +51,7 @@ public static class TechnicalEndpoints
         group.MapPost("/nodes", async (Guid customerId, TechnicalNode input, AppDbContext db, HttpContext c) =>
         {
             Admin(c); await Sites(db, c, customerId);
-            input.Id = Guid.NewGuid(); input.CustomerId = customerId; input.Version = 1;
+            input.DeletedAt = null; input.Id = Guid.NewGuid(); input.CustomerId = customerId; input.Version = 1;
             input.CreatedAt = input.UpdatedAt = DateTimeOffset.UtcNow;
             await ValidateNode(input, db);
             db.Nodes.Add(input); Security.Audit(db, c, "Kataster.Angelegt", input.Id.ToString(), customerId, JsonSerializer.Serialize(input));
@@ -67,7 +67,7 @@ public static class TechnicalEndpoints
             if (!input.IsActive)
                 Require(!await db.Nodes.AnyAsync(x => x.ParentId == id && x.IsActive) && !await db.Assignments.AnyAsync(x => x.NodeId == id && x.ValidTo == null && db.Points.Any(p => p.Id == x.PointId && p.IsActive)), "Zuerst aktive Untereinträge und zugeordnete Messstellen deaktivieren.");
             var before = JsonSerializer.Serialize(node);
-            input.Id = node.Id; input.CustomerId = node.CustomerId; input.CreatedAt = node.CreatedAt; input.Version = node.Version + 1; input.UpdatedAt = DateTimeOffset.UtcNow;
+            input.DeletedAt = node.DeletedAt; input.Id = node.Id; input.CustomerId = node.CustomerId; input.CreatedAt = node.CreatedAt; input.Version = node.Version + 1; input.UpdatedAt = DateTimeOffset.UtcNow;
             await ValidateNode(input, db); db.Entry(node).CurrentValues.SetValues(input);
             Security.Audit(db, c, "Kataster.Geändert", id.ToString(), customerId, JsonSerializer.Serialize(new { before = JsonDocument.Parse(before).RootElement, after = input }));
             await db.SaveChangesAsync(); return Results.Ok(View(node));
@@ -105,7 +105,7 @@ public static class TechnicalEndpoints
         foreach (var p in typeof(TechnicalNode).GetProperties().Where(x => x.PropertyType == typeof(decimal) || x.PropertyType == typeof(decimal?)))
             if (p.GetValue(n) is decimal value) Require(Math.Abs(value) <= 1000000000000000m && decimal.Round(value, 6) == value, "Zahlen dürfen maximal sechs Nachkommastellen und einen Betrag von höchstens 10¹⁵ enthalten.");
         foreach (var p in typeof(TechnicalNode).GetProperties().Where(x => x.PropertyType == typeof(string)))
-            Require(p.GetValue(n) is string text && text.Length <= (p.Name == "Notes" ? 4000 : 1000), "Textfelder dürfen maximal 1.000 Zeichen enthalten; Bemerkungen maximal 4.000.");
+            Require(p.GetValue(n) is string text && text.Length <= (p.Name == "MeasureNotes" ? 10000 : p.Name == "Notes" ? 4000 : 1000), "Textfelder dürfen maximal 1.000 Zeichen enthalten; Bemerkungen maximal 4.000 und Maßnahmentexte maximal 10.000.");
         Require(n.CustomFields != null && n.CustomFields.Count <= 30 && n.CustomFields.All(x => x.Key.Length is > 0 and <= 80 && x.Value != null && x.Value.Length <= 1000), "Maximal 30 Zusatzfelder mit kurzen Bezeichnungen und Werten verwenden.");
         Require(n.Quantity is >= 1 and <= 1000000 && n.RatedPowerW is >= 0 and <= 1000000000 && n.SystemPowerW is not < 0 && n.SystemPowerW is not > 1000000000 && n.AnnualHours is >= 0 and <= 8784 && n.OperatingDays is >= 0 and <= 366 && n.LoadFactor is >= 0 and <= 1 && n.UsableArea is not < 0 && n.HeatedArea is not < 0 && (n.Year == null || n.Year is >= 1000 and <= 2200), "Flächen, Baujahr, Anzahl, Leistungen, Betriebsstunden oder Lastfaktor liegen außerhalb des zulässigen Bereichs.");
         Require(TimeZoneInfo.TryFindSystemTimeZoneById(n.TimeZone, out _), "Unbekannte Standortzeitzone.");

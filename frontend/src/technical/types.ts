@@ -25,6 +25,8 @@ export type Node = {
   assetRole: string;
   annualEnergyValue: number | null;
   savingsPercent: number;
+  measureImplemented: boolean;
+  measureNotes: string;
   annualEnergyUnit: string;
   annualEnergyMedium: string;
   manufacturer: string;
@@ -208,6 +210,8 @@ export const emptyNode: Omit<Node, 'id' | 'customerId'> = {
   assetRole: 'Consumption',
   annualEnergyValue: null,
   savingsPercent: 0,
+  measureImplemented: false,
+  measureNotes: "",
   annualEnergyUnit: 'kWh',
   annualEnergyMedium: 'Electricity',
   manufacturer: '',

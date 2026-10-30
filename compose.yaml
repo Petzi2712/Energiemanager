@@ -72,7 +72,7 @@ services:
     environment:
       TEST_BASE_URL: http://web:8080
       MAIL_BASE_URL: http://mail:8025
-    command: [python, -m, unittest, -v, test_api, test_technical, test_workspace, test_excel, test_theory, test_v05]
+    command: [python, -m, unittest, -v, test_api, test_technical, test_workspace, test_excel, test_theory, test_v05, test_v06]
     depends_on:
       web:
         condition: service_started

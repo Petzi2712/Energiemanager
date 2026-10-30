@@ -107,7 +107,7 @@ var api = app.MapGroup("/api").AddEndpointFilter(async (context, next) =>
     }
     return await next(context);
 });
-api.MapGet("/health", async (AppDbContext db) => await db.Database.CanConnectAsync() ? Results.Ok(new { status = "ok", phase = 5, version = "0.5.0" }) : Results.StatusCode(503));
+api.MapGet("/health", async (AppDbContext db) => await db.Database.CanConnectAsync() ? Results.Ok(new { status = "ok", phase = 6, version = "0.6.0" }) : Results.StatusCode(503));
 api.MapGet("/auth/csrf", (HttpContext c, IAntiforgery a) => Results.Ok(new { token = a.GetAndStoreTokens(c).RequestToken }));
 AuthEndpoints.Map(api);
 CustomerEndpoints.Map(api);
@@ -116,6 +116,8 @@ TechnicalEndpoints.Map(api);
 MeterEndpoints.Map(api);
 DocumentEndpoints.Map(api);
 WorkspaceEndpoints.Map(api);
+KatasterActions.Map(api);
+ReportEndpoints.Map(api);
 ConsumptionEndpoints.Map(api);
 TheoreticalBalance.Map(api);
 MeterExcelEndpoints.Map(api);

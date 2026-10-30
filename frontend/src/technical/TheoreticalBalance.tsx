@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import { ErrorBox, Field } from "../ui";
+import { MeasurePanel } from "./MeasurePanel";
 import { media, num } from "./types";
 
 type Entry = {
@@ -17,8 +18,11 @@ type Entry = {
   source: string;
   savingsPercent: number;
   version: number;
+  measureImplemented: boolean;
+  measureNotes: string;
 };
 type Balance = {
+  id: string;
   name: string;
   entries: Entry[];
   totals: { medium: string; unit: string; role: string; value: number }[];
@@ -58,9 +62,20 @@ export function TheoreticalBalance({
     queryFn: () =>
       api<Balance>(`/technical/${customerId}/balance?nodeId=${nodeId}`),
   });
+  const overview = useQuery({
+    queryKey: ["theory-overview", customerId, version],
+    queryFn: () =>
+      api<{ total: Balance; buildings: Balance[] }>(
+        `/technical/${customerId}/balance-overview`,
+      ),
+  });
+  const [measureOpen, setMeasureOpen] = useState<string | null>(null);
+  const [implementedDrafts, setImplementedDrafts] = useState<
+    Record<string, boolean>
+  >({});
   const [selection, setSelection] = useState(""),
-    [kind, setKind] = useState("Pie"),
-    [groupBy, setGroupBy] = useState("category"),
+    [kind, setKind] = useState("Donut"),
+    [groupBy, setGroupBy] = useState("name"),
     [scenario, setScenario] = useState(false);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [drafts, setDrafts] = useState<
@@ -73,10 +88,14 @@ export function TheoreticalBalance({
   const data = q.data;
   const key = (g: { medium: string; unit: string; role: string }) =>
     `${g.medium}|${g.unit}|${g.role}`;
+  const available = [
+    ...(overview.data?.total.totals || []),
+    ...(data?.totals || []),
+  ].filter((g, i, all) => all.findIndex((x) => key(x) === key(g)) === i);
   const active =
-    data?.totals.find((g) => key(g) === selection) ||
-    data?.totals.find((g) => g.role === "Consumption") ||
-    data?.totals[0];
+    available.find((g) => key(g) === selection) ||
+    available.find((g) => g.role === "Consumption") ||
+    available[0];
   const entries =
     data?.entries.filter((e) => active && key(e) === key(active)) || [];
   const totals = new Map<string, number>();
@@ -121,7 +140,7 @@ export function TheoreticalBalance({
   return (
     <section className="panel theoretical-balance">
       <h2>Theoretische Jahresbilanz · {data?.name || "Gebäude / Standort"}</h2>
-      <ErrorBox error={q.error} />
+      <ErrorBox error={q.error || overview.error} />
       {q.isLoading && <p role="status">Jahresbilanz wird berechnet …</p>}
       {data && (
         <>
@@ -129,6 +148,83 @@ export function TheoreticalBalance({
             Abschätzung aus technischen Stammdaten und vorgegebenen
             Jahresmengen. Keine gemessene Energiebilanz.
           </p>
+          <div className="building-chart-grid">
+            {overview.data &&
+              [overview.data.total, ...overview.data.buildings].map(
+                (balance, index) => {
+                  const matching = balance.entries.filter(
+                    (e) =>
+                      key(e) ===
+                      key(
+                        active || {
+                          medium: "Electricity",
+                          unit: "kWh",
+                          role: "Consumption",
+                        },
+                      ),
+                  );
+                  const values = new Map<string, number>();
+                  for (const e of matching) {
+                    const label =
+                      index === 0 ? e.building : groupBy === "category" ? e.category : groupBy === "building" ? e.building : `${e.name} · ${e.number}`;
+                    const value =
+                      scenario &&
+                      e.role === "Consumption" &&
+                      selected[e.id] !== false
+                        ? e.value *
+                          (1 -
+                            (drafts[e.id]?.percent ?? e.savingsPercent) / 100)
+                        : e.value;
+                    values.set(label, (values.get(label) || 0) + value);
+                  }
+                  const valuesList = [...values].map(([name, value]) => ({
+                    name,
+                    value,
+                  }));
+                  const total = valuesList.reduce((sum, e) => sum + e.value, 0);
+                  return (
+                    <article
+                      className="building-chart-card"
+                      key={balance.id}
+                      data-building-id={balance.id}
+                    >
+                      <h3>
+                        {index === 0
+                          ? active?.role === "Generation"
+                            ? "Gesamterzeugung"
+                            : active?.role === "Both"
+                              ? "Gesamtbilanz kombinierter Anlagen"
+                              : "Gesamtverbrauch"
+                          : balance.name}
+                      </h3>
+                      <p className="subtle">
+                        {index === 0
+                          ? balance.name + " · alle freigegebenen Standorte"
+                          : "Verbraucher dieses Gebäudes"}
+                      </p>
+                      {matching.length ? (
+                        <>
+                          <strong className="building-chart-total">
+                            {num(total)} {active?.unit || "kWh"}/Jahr
+                          </strong>
+                          <EnergyChart
+                            groups={valuesList}
+                            kind={kind}
+                            total={total}
+                            unit={active?.unit || "kWh"}
+                          />
+                        </>
+                      ) : (
+                        <p>
+                          Keine Jahreswerte für die gewählte Bilanz hinterlegt.
+                        </p>
+                      )}
+                    </article>
+                  );
+                },
+              )}
+          </div>
+          <p className="subtle">{overview.data?.total.method}</p>
           {!active ? (
             <p className="notice">
               Noch keine Jahresmengen oder vollständigen
@@ -142,7 +238,7 @@ export function TheoreticalBalance({
                     value={key(active)}
                     onChange={(e) => setSelection(e.target.value)}
                   >
-                    {data.totals.map((g) => (
+                    {available.map((g) => (
                       <option key={key(g)} value={key(g)}>
                         {media[g.medium] || "Sonstige"} · {roles[g.role]} ·{" "}
                         {g.unit}/Jahr
@@ -173,7 +269,11 @@ export function TheoreticalBalance({
               </div>
               <div className="theory-total">
                 <strong>
-                  {num(active.value)} {active.unit}/Jahr
+                  {num(
+                    data.totals.find((g) => key(g) === key(active))?.value ??
+                      null,
+                  )}{" "}
+                  {active.unit}/Jahr
                 </strong>
                 <small>
                   {roles[active.role]} · {entries.length} berücksichtigte
@@ -185,12 +285,17 @@ export function TheoreticalBalance({
                   Das Diagramm zeigt das angenommene Szenario nach Einsparung.
                 </p>
               )}
-              <EnergyChart
-                groups={display}
-                kind={kind}
-                total={chartTotal}
-                unit={active.unit}
-              />
+              <details className="selected-balance-chart">
+                <summary>
+                  Diagramm des ausgewählten Bereichs · {data.name}
+                </summary>
+                <EnergyChart
+                  groups={display}
+                  kind={kind}
+                  total={chartTotal}
+                  unit={active.unit}
+                />
+              </details>
               {active.role === "Consumption" && (
                 <section className="estimate-box savings-scenario">
                   <h3>Einsparszenario je Komponente</h3>
@@ -235,73 +340,138 @@ export function TheoreticalBalance({
                           <th>Jahresmenge</th>
                           <th>Einsparung (%)</th>
                           <th>Angenommene Ersparnis</th>
+                          <th>Maßnahme umgesetzt</th>
+                          <th>Maßnahmendetails</th>
                         </tr>
                       </thead>
                       <tbody>
                         {eligible.map((e) => (
-                          <tr key={e.id}>
-                            <td>
-                              <input
-                                type="checkbox"
-                                aria-label={`Komponente auswählen: ${e.name} · ${e.number}`}
-                                checked={selected[e.id] !== false}
-                                onChange={(event) =>
-                                  setSelected({
-                                    ...selected,
-                                    [e.id]: event.target.checked,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              {e.name}
-                              <small>ID: {e.number}</small>
-                            </td>
-                            <td>
-                              {num(e.value)} {e.unit}
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                aria-label={`Einsparung (%): ${e.name} · ${e.number}`}
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                disabled={!canEdit || busy}
-                                value={
-                                  drafts[e.id]?.percent ?? e.savingsPercent
-                                }
-                                onChange={(event) => {
-                                  setSaved(false);
-                                  setDrafts({
-                                    ...drafts,
-                                    [e.id]: {
-                                      percent: Math.max(
-                                        0,
-                                        Math.min(
-                                          100,
-                                          Number(event.target.value),
+                          <Fragment key={e.id}>
+                            <tr>
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  aria-label={`Komponente auswählen: ${e.name} · ${e.number}`}
+                                  checked={selected[e.id] !== false}
+                                  onChange={(event) =>
+                                    setSelected({
+                                      ...selected,
+                                      [e.id]: event.target.checked,
+                                    })
+                                  }
+                                />
+                              </td>
+                              <td>
+                                {e.name}
+                                <small>ID: {e.number}</small>
+                              </td>
+                              <td>
+                                {num(e.value)} {e.unit}
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  aria-label={`Einsparung (%): ${e.name} · ${e.number}`}
+                                  min="0"
+                                  max="100"
+                                  step="0.1"
+                                  disabled={!canEdit || busy}
+                                  value={
+                                    drafts[e.id]?.percent ?? e.savingsPercent
+                                  }
+                                  onChange={(event) => {
+                                    setSaved(false);
+                                    setDrafts({
+                                      ...drafts,
+                                      [e.id]: {
+                                        percent: Math.max(
+                                          0,
+                                          Math.min(
+                                            100,
+                                            Number(event.target.value),
+                                          ),
                                         ),
-                                      ),
-                                      version:
-                                        drafts[e.id]?.version ?? e.version,
-                                    },
-                                  });
-                                }}
-                              />
-                            </td>
-                            <td>
-                              {num(
-                                selected[e.id] !== false
-                                  ? (e.value *
-                                      (drafts[e.id]?.percent ??
-                                        e.savingsPercent)) /
-                                      100
-                                  : 0,
-                              )}{" "}
-                              {e.unit}/Jahr
-                            </td>
-                          </tr>
+                                        version:
+                                          drafts[e.id]?.version ?? e.version,
+                                      },
+                                    });
+                                  }}
+                                />
+                              </td>
+                              <td>
+                                {num(
+                                  selected[e.id] !== false
+                                    ? (e.value *
+                                        (drafts[e.id]?.percent ??
+                                          e.savingsPercent)) /
+                                        100
+                                    : 0,
+                                )}{" "}
+                                {e.unit}/Jahr
+                              </td>
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  aria-label={`Maßnahme umgesetzt: ${e.name} · ${e.number}`}
+                                  checked={
+                                    implementedDrafts[e.id] ??
+                                    e.measureImplemented
+                                  }
+                                  disabled={!canEdit}
+                                  onChange={(event) => {
+                                    setImplementedDrafts({
+                                      ...implementedDrafts,
+                                      [e.id]: event.target.checked,
+                                    });
+                                    setMeasureOpen(e.id);
+                                  }}
+                                />
+                              </td>
+                              <td>
+                                <button
+                                  aria-expanded={measureOpen === e.id}
+                                  aria-label={`Maßnahme aufklappen: ${e.name} · ${e.number}`}
+                                  onClick={() =>
+                                    setMeasureOpen(
+                                      measureOpen === e.id ? null : e.id,
+                                    )
+                                  }
+                                >
+                                  {measureOpen === e.id
+                                    ? "Schließen"
+                                    : "Aufklappen"}
+                                </button>
+                              </td>
+                            </tr>
+                            {measureOpen === e.id && (
+                              <tr className="measure-expanded">
+                                <td colSpan={7}>
+                                  <MeasurePanel
+                                    key={e.id}
+                                    customerId={customerId}
+                                    entry={e}
+                                    implemented={
+                                      implementedDrafts[e.id] ??
+                                      e.measureImplemented
+                                    }
+                                    canEdit={canEdit}
+                                    onSaved={async () => {
+                                      setMeasureOpen(null);
+                                      setImplementedDrafts((current) => {
+                                        const next = { ...current };
+                                        delete next[e.id];
+                                        return next;
+                                      });
+                                      await cache.invalidateQueries({
+                                        queryKey: ["technical", customerId],
+                                      });
+                                      await q.refetch();
+                                    }}
+                                  />
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
                         ))}
                       </tbody>
                     </table>
@@ -314,7 +484,11 @@ export function TheoreticalBalance({
                     <br />
                     Verbleibende Jahresmenge:{" "}
                     <strong>
-                      {num(active.value - saving)} {active.unit}/Jahr
+                      {num(
+                        (data.totals.find((g) => key(g) === key(active))
+                          ?.value || 0) - saving,
+                      )}{" "}
+                      {active.unit}/Jahr
                     </strong>
                   </p>
                   <label className="checkbox">

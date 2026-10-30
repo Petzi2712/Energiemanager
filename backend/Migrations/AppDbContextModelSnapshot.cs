@@ -611,6 +611,75 @@ namespace Energy.Api.Migrations
                     b.ToTable("ReadingRevisions");
                 });
 
+            modelBuilder.Entity("Energy.ReportDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BuildingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Excel")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateOnly>("From")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IncludeMeasures")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IncludeReadings")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IncludeTheory")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Medium")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("NodeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Pdf")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("SiteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("To")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId", "BuildingId");
+
+                    b.HasIndex("CustomerId", "NodeId");
+
+                    b.HasIndex("CustomerId", "SiteId");
+
+                    b.ToTable("ReportDefinitions");
+                });
+
             modelBuilder.Entity("Energy.SitePermission", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -676,6 +745,12 @@ namespace Energy.Api.Migrations
 
                     b.Property<Guid?>("NodeId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("General");
 
                     b.Property<Guid?>("ReadingId")
                         .HasColumnType("uuid");
@@ -745,6 +820,9 @@ namespace Energy.Api.Migrations
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("EnergySources")
                         .IsRequired()
                         .HasColumnType("text");
@@ -773,6 +851,13 @@ namespace Energy.Api.Migrations
                         .HasColumnType("numeric(24,6)");
 
                     b.Property<string>("Manufacturer")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("MeasureImplemented")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MeasureNotes")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -1117,6 +1202,33 @@ namespace Energy.Api.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Energy.ReportDefinition", b =>
+                {
+                    b.HasOne("Energy.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Energy.TechnicalNode", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId", "BuildingId")
+                        .HasPrincipalKey("CustomerId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Energy.TechnicalNode", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId", "NodeId")
+                        .HasPrincipalKey("CustomerId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Energy.TechnicalNode", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId", "SiteId")
+                        .HasPrincipalKey("CustomerId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Energy.SitePermission", b =>

@@ -43,20 +43,22 @@ function PhotoPreview({ file }: { file: File }) {
 }
 export function Documents({
   nodeId,
+  purpose = "General",
   readingId,
   documents,
   canWrite,
   onSaved,
 }: {
   nodeId?: string;
+  purpose?: "General" | "Measure";
   readingId?: string;
   documents?: Document[];
   canWrite: boolean;
   onSaved?: () => Promise<void>;
 }) {
   const q = useQuery({
-    queryKey: ["documents", nodeId],
-    queryFn: () => api<Document[]>(`/documents?nodeId=${nodeId}`),
+    queryKey: ["documents", nodeId, purpose],
+    queryFn: () => api<Document[]>(`/documents?nodeId=${nodeId}&purpose=${purpose}`),
     enabled: !!nodeId,
   });
   const [error, setError] = useState<unknown>(),
@@ -64,7 +66,7 @@ export function Documents({
   const [remove, setRemove] = useState<Document | null>(null);
   return (
     <section className={nodeId ? "panel" : "reading-documents"}>
-      {nodeId && <h2>Fotos und technische Dokumente</h2>}
+      {nodeId && purpose === "General" && <h2>Fotos und technische Dokumente</h2>}
       <ErrorBox error={error || q.error} />
       <div className="document-list">
         {(documents || q.data || []).map((d) => (
@@ -110,14 +112,14 @@ export function Documents({
         <label className="file-label">
           {busy
             ? "Upload läuft …"
-            : nodeId
+            : purpose === "Measure" ? "PDF-Bericht hinzufügen (max. 6 MB)" : nodeId
               ? "Foto / PDF hinzufügen (max. 6 MB)"
               : "Ablesefoto hinzufügen (max. 6 MB)"}
           <input
             type="file"
             disabled={busy}
             accept={
-              nodeId
+              purpose === "Measure" ? "application/pdf" : nodeId
                 ? "image/jpeg,image/png,application/pdf"
                 : "image/jpeg,image/png"
             }
@@ -130,7 +132,7 @@ export function Documents({
               try {
                 await upload(
                   file,
-                  nodeId ? `nodeId=${nodeId}` : `readingId=${readingId}`,
+                  nodeId ? `nodeId=${nodeId}&purpose=${purpose}` : `readingId=${readingId}`,
                 );
                 if (nodeId) await q.refetch();
                 await onSaved?.();

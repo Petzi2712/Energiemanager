@@ -99,7 +99,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await page.getByRole("button", { name: "Mein Konto öffnen" }).click();
     const motto = "Energie gemeinsam verstehen.\nNachhaltig besser werden.";
-    await page.getByLabel("Leitspruch auf dem Anmeldebildschirm").fill(motto);
+    await page.getByLabel("Leitspruch auf dem Anmeldebildschirm", { exact: true }).fill(motto);
     await page
       .getByRole("button", { name: "Leitspruch speichern", exact: true })
       .click();
@@ -110,7 +110,7 @@ for (const width of [1440, 390]) {
       )
       .toBe(motto);
     await page
-      .getByLabel("Neues Logo (PNG/JPEG, maximal 2 MB)")
+      .getByLabel("Neues Logo (PNG/JPEG, maximal 2 MB)", { exact: true })
       .setInputFiles("e2e/fixtures/meter.png");
     await page
       .getByRole("button", { name: "Logo hochladen", exact: true })
@@ -169,7 +169,7 @@ for (const width of [1440, 390]) {
       page.getByText("27.000 kWh/Jahr", { exact: true }),
     ).toBeVisible();
     await page
-      .getByLabel("Foto / PDF hinzufügen (max. 6 MB)")
+      .getByLabel("Foto / PDF hinzufügen (max. 6 MB)", { exact: true })
       .setInputFiles("e2e/fixtures/meter.png");
     await expect(
       page.getByRole("img", { name: "meter.jpg", exact: true }),
@@ -223,7 +223,7 @@ for (const width of [1440, 390]) {
       page.getByRole("img", { name: /Balkendiagramm des Verbrauchs/ }),
     ).toBeVisible();
     await expect(page.locator(".chart-scroll rect").first()).toBeVisible();
-    await page.getByLabel("Balken gruppieren nach").selectOption("Month");
+    await page.getByLabel("Balken gruppieren nach", { exact: true }).selectOption("Month");
     await expect
       .poll(
         async () =>
@@ -240,7 +240,7 @@ for (const width of [1440, 390]) {
     expect(
       Math.abs((await page.locator(".topbar").boundingBox())!.y),
     ).toBeLessThan(2);
-    await expect(page.getByLabel("Kundenauswahl")).toBeInViewport();
+    await expect(page.getByLabel("Kundenauswahl", { exact: true })).toBeInViewport();
     await page.evaluate(() => window.scrollTo(0, 0));
     // Native HTML-DnD funktioniert auch im schmalen Browser; Tastatur-/Touch-Alternative ist das Zuordnungsformular.
     await childButton.dragTo(rootButton);
@@ -260,7 +260,7 @@ for (const width of [1440, 390]) {
         .parentPointId,
     ).toBe(root.id);
     await rootButton.click();
-    await page.getByLabel("Balken gruppieren nach").selectOption("Week");
+    await page.getByLabel("Balken gruppieren nach", { exact: true }).selectOption("Week");
     await page.evaluate(() =>
       document.querySelector(".consumption-panel")?.scrollIntoView(),
     );
@@ -286,8 +286,8 @@ for (const width of [1440, 390]) {
       ),
     ).toBeTruthy();
     await page.getByRole("button", { name: "Mein Konto öffnen" }).click();
-    await page.getByLabel("Darkmodus aktivieren").uncheck();
-    await expect(page.getByLabel("Darkmodus aktivieren")).toBeEnabled();
+    await page.getByLabel("Darkmodus aktivieren", { exact: true }).uncheck();
+    await expect(page.getByLabel("Darkmodus aktivieren", { exact: true })).toBeEnabled();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     await page.getByRole("button", { name: "Abmelden", exact: true }).click();
     await expect(page.locator(".login-motto")).toHaveText(motto);

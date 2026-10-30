@@ -4,6 +4,9 @@ namespace Energy;
 
 public class TechnicalNode
 {
+    public DateTimeOffset? DeletedAt { get; set; }
+    public bool MeasureImplemented { get; set; }
+    public string MeasureNotes { get; set; } = "";
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid CustomerId { get; set; }
     public Guid? ParentId { get; set; }
@@ -150,6 +153,7 @@ public class SitePermission
 }
 public class StoredDocument
 {
+    public string Purpose { get; set; } = "General";
     public DateTimeOffset? DeletedAt { get; set; }
     public bool BlobDeleted { get; set; }
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -177,6 +181,7 @@ public partial class AppDbContext
     public DbSet<StoredDocument> Documents => Set<StoredDocument>();
     static void ConfigureTechnical(ModelBuilder b)
     {
+        b.Entity<TechnicalNode>().HasQueryFilter(x => x.DeletedAt == null);
         b.Entity<TechnicalNode>().HasAlternateKey(x => new { x.CustomerId, x.Id });
         b.Entity<TechnicalNode>().HasOne<Customer>().WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
         b.Entity<TechnicalNode>().HasOne<TechnicalNode>().WithMany().HasForeignKey(x => new { x.CustomerId, x.ParentId }).HasPrincipalKey(x => new { x.CustomerId, x.Id }).OnDelete(DeleteBehavior.Restrict);
@@ -224,6 +229,7 @@ public partial class AppDbContext
         b.Entity<SitePermission>().HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<SitePermission>().HasOne<TechnicalNode>().WithMany().HasForeignKey(x => x.SiteId).OnDelete(DeleteBehavior.Restrict);
         b.Entity<StoredDocument>().HasOne<Customer>().WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<StoredDocument>().Property(x => x.Purpose).HasDefaultValue("General");
         b.Entity<StoredDocument>().HasQueryFilter(x => x.DeletedAt == null);
         b.Entity<StoredDocument>().HasOne<TechnicalNode>().WithMany().HasForeignKey(x => new { x.CustomerId, x.NodeId }).HasPrincipalKey(x => new { x.CustomerId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         b.Entity<StoredDocument>().HasOne<MeterReading>().WithMany().HasForeignKey(x => x.ReadingId).OnDelete(DeleteBehavior.Restrict);

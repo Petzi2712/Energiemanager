@@ -41,9 +41,9 @@ public static class DocumentEndpoints
 {
     public static void Map(RouteGroupBuilder api)
     {
-        api.MapPost("/documents", async (HttpContext c, AppDbContext db, IPrivateFileStore store, Guid? nodeId, Guid? readingId) =>
+        api.MapPost("/documents", async (HttpContext c, AppDbContext db, IPrivateFileStore store, Guid? nodeId, Guid? readingId, string? purpose) =>
         {
-            Writer(c); Require(nodeId.HasValue ^ readingId.HasValue, "Genau einen Katastereintrag oder eine Ablesung zuordnen.");
+            Writer(c); purpose ??= "General"; Require(purpose is "General" or "Measure" && (purpose != "Measure" || nodeId.HasValue), "Ungültige Dokumentart."); Require(nodeId.HasValue ^ readingId.HasValue, "Genau einen Katastereintrag oder eine Ablesung zuordnen.");
             var customerId = await Authorize(db, c, nodeId, readingId);
             if (nodeId.HasValue) Admin(c);
             Require(c.Request.ContentLength is > 0 and <= 7 * 1024 * 1024, "Datei darf maximal 6 MB groß sein.");
@@ -52,6 +52,7 @@ public static class DocumentEndpoints
             Require(file != null && file.Length is > 0 and <= 6 * 1024 * 1024, "Eine JPEG-/PNG-Datei oder beim Kataster ein PDF bis 6 MB auswählen.");
             await using var source = file!.OpenReadStream(); using var buffer = new MemoryStream(); await source.CopyToAsync(buffer); var bytes = buffer.ToArray();
             string contentType; string extension;
+            Require(purpose != "Measure" || bytes.AsSpan().StartsWith("%PDF-"u8), "Maßnahmenberichte als PDF hochladen.");
             if (nodeId.HasValue && bytes.AsSpan().StartsWith("%PDF-"u8)) { contentType = "application/pdf"; extension = ".pdf"; }
             else
             {
@@ -65,8 +66,8 @@ public static class DocumentEndpoints
                 }
                 catch (MagickException) { throw new TechnicalFault(400, "Bilddatei ist beschädigt oder nicht unterstützt."); }
             }
-            Require((await db.Documents.CountAsync(x => x.CustomerId == customerId && x.NodeId == nodeId && x.ReadingId == readingId)) < 20, "Maximal 20 Dateien pro Eintrag oder Ablesung.");
-            var document = new StoredDocument { CustomerId = customerId, NodeId = nodeId, ReadingId = readingId,
+            Require((await db.Documents.CountAsync(x => x.CustomerId == customerId && x.NodeId == nodeId && x.ReadingId == readingId && x.Purpose == purpose)) < 20, "Maximal 20 Dateien pro Eintrag oder Ablesung.");
+            var document = new StoredDocument { Purpose = purpose, CustomerId = customerId, NodeId = nodeId, ReadingId = readingId,
                 Name = Path.GetFileNameWithoutExtension(file.FileName).Replace('\r', '_').Replace('\n', '_')[..Math.Min(Path.GetFileNameWithoutExtension(file.FileName).Length, 100)] + extension, ContentType = contentType };
             document.BlobName = $"{customerId}/{document.Id}{extension}";
             try { await store.Save(document.BlobName, bytes, contentType); }
@@ -75,10 +76,10 @@ public static class DocumentEndpoints
             try { await db.SaveChangesAsync(); } catch { await store.Delete(document.BlobName); throw; }
             return Results.Created($"/api/documents/{document.Id}", new { document.Id, document.Name, document.ContentType });
         }).RequireAuthorization();
-        api.MapGet("/documents", async (Guid nodeId, AppDbContext db, HttpContext c) =>
+        api.MapGet("/documents", async (Guid nodeId, AppDbContext db, HttpContext c, string? purpose) =>
         {
-            await Authorize(db, c, nodeId, null);
-            return Results.Ok(await db.Documents.Where(x => x.NodeId == nodeId).Select(x => new { x.Id, x.Name, x.ContentType, x.CreatedAt }).ToListAsync());
+            await Authorize(db, c, nodeId, null); purpose ??= "General"; Require(purpose is "General" or "Measure", "Ungültige Dokumentart.");
+            return Results.Ok(await db.Documents.Where(x => x.NodeId == nodeId && x.Purpose == purpose).Select(x => new { x.Id, x.Name, x.ContentType, x.CreatedAt }).ToListAsync());
         }).RequireAuthorization();
         api.MapDelete("/documents/{id:guid}", async (Guid id, AppDbContext db, HttpContext c, IPrivateFileStore store, ILogger<DocumentCleanup> log) =>
         {

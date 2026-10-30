@@ -29,7 +29,7 @@ for (const width of [1440, 390]) {
       .getByRole('navigation')
       .getByRole('button', { name: 'Kundenkataster', exact: true })
       .click();
-    const customer = page.getByLabel('Kundenauswahl');
+    const customer = page.getByLabel('Kundenauswahl', { exact: true });
     if (await customer.count())
       await customer.selectOption({ label: 'Nordwerk Metalltechnik GmbH' });
     const suffix = `${width}-${Date.now()}`;
@@ -79,7 +79,7 @@ for (const width of [1440, 390]) {
       .getByRole('button', { name: 'Katastereintrag speichern' })
       .click();
     await expect(
-      page.getByText('7.200 kWh/Jahr', { exact: true }),
+      page.locator('.building-chart-card').filter({ has: page.getByRole('heading', { name: 'UI Halle ' + suffix, exact: true }) }).getByText('7.200 kWh/Jahr', { exact: true }),
     ).toBeVisible();
     if (width < 760) await page.getByRole('button', { name: 'Menü öffnen' }).click();
     await page.getByRole('navigation').getByRole('button', { name: 'Zähleranlagenbaum', exact: true }).click();
@@ -110,7 +110,7 @@ for (const width of [1440, 390]) {
     ).toBeVisible();
     await page.getByLabel('Zählerstand (kWh) *', { exact: true }).fill('120');
     await page
-      .getByLabel('Zählerfoto aufnehmen / auswählen (optional, JPEG/PNG)')
+      .getByLabel('Zählerfoto aufnehmen / auswählen (optional, JPEG/PNG)', { exact: true })
       .setInputFiles('e2e/fixtures/meter.png');
     await page
       .getByRole('button', { name: 'Zählerstand speichern', exact: true })

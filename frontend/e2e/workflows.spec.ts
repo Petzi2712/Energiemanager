@@ -15,7 +15,7 @@ for (const viewport of [{ name: 'Desktop', width: 1440, height: 960 }, { name: '
       await expect(page.getByRole('heading', { name: 'Eigenes Passwort festlegen' })).toBeVisible();
       await page.getByLabel('Startpasswort', { exact: true }).fill(password);
       await page.getByLabel('Neues Passwort', { exact: true }).fill('Browser_Energie_2026!');
-      await page.getByLabel('Neues Passwort wiederholen').fill('Browser_Energie_2026!');
+      await page.getByLabel('Neues Passwort wiederholen', { exact: true }).fill('Browser_Energie_2026!');
       await page.getByRole('button', { name: 'Passwort speichern und fortfahren' }).click();
       password = 'Browser_Energie_2026!';
     }
@@ -64,7 +64,7 @@ test('Erstanmeldung: Kundenbenutzer muss Passwort ändern und sieht nur seinen K
   expect((await request.get('/api/customers/')).status()).toBe(403);
   await page.getByLabel('Startpasswort', { exact: true }).fill('Start_Energie');
   await page.getByLabel('Neues Passwort', { exact: true }).fill('Kunden_Energie_2026!');
-  await page.getByLabel('Neues Passwort wiederholen').fill('Kunden_Energie_2026!');
+  await page.getByLabel('Neues Passwort wiederholen', { exact: true }).fill('Kunden_Energie_2026!');
   await page.getByRole('button', { name: 'Passwort speichern und fortfahren' }).click();
   await expect(page.getByRole('heading', { name: 'Übersicht', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Menü öffnen' }).click();

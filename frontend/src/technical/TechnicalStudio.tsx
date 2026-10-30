@@ -15,6 +15,7 @@ import { MeterPanel, Documents } from "./readings";
 import "./technical.css";
 import { TheoreticalBalance } from "./TheoreticalBalance";
 import { ExcelTools } from "./ExcelTools";
+import { DeleteDialog } from "../DeleteDialog";
 import { CopyNode } from "./CopyNode";
 
 export function TechnicalStudio({
@@ -36,6 +37,7 @@ export function TechnicalStudio({
   } | null>(null);
   const [search, setSearch] = useState("");
   const [copying, setCopying] = useState<NodeView["node"] | null>(null);
+  const [deleting, setDeleting] = useState<NodeView["node"] | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{
     id: string;
@@ -64,6 +66,11 @@ export function TechnicalStudio({
   }, [q.data, mode, selected]);
   const tree = q.data || { nodes: [], points: [] };
   const node = tree.nodes.find((x) => x.node.id === selected?.id);
+  function balanceRoot(id: string): string {
+    let current = tree.nodes.find(x => x.node.id === id)?.node;
+    while (current && !["Site","Building"].includes(current.kind)) current = tree.nodes.find(x => x.node.id === current?.parentId)?.node;
+    return current?.id || id;
+  }
   const point = tree.points.find((x) => x.point.id === selected?.id);
   const refresh = async () => {
     await q.refetch();
@@ -339,6 +346,7 @@ export function TechnicalStudio({
                       >
                         Stammdaten bearbeiten
                       </button>
+                      <button className="danger" onClick={() => setDeleting(node.node)}>Katastereintrag löschen</button>
                       {node.node.kind !== "Site" && (
                         <button onClick={() => setCopying(node.node)}>
                           Eintrag kopieren
@@ -365,12 +373,11 @@ export function TechnicalStudio({
                     </div>
                   )}
                 </section>
-                {mode === "kataster" &&
-                  ["Site", "Building"].includes(node.node.kind) && (
+                {mode === "kataster" && (
                     <TheoreticalBalance
                       key={node.node.id}
                       customerId={customer}
-                      nodeId={node.node.id}
+                      nodeId={balanceRoot(node.node.id)}
                       canEdit={admin}
                       version={tree.nodes
                         .map((n) => `${n.node.id}:${n.node.version}`)
@@ -469,6 +476,7 @@ export function TechnicalStudio({
           }}
         />
       )}
+      {deleting && <DeleteDialog title="Katastereintrag löschen" path={`/technical/${customer}/nodes/${deleting.id}`} version={deleting.version} description={`„${deleting.name}“ samt Dokumenten und Maßnahmen-Nachweisen löschen. Untereinträge werden nicht automatisch gelöscht. Zählerhistorien bleiben geschützt.`} onClose={() => setDeleting(null)} onDeleted={async () => { setDeleting(null); setSelected(null); await refresh(); }}/>}
       {copying && (
         <CopyNode
           source={copying}

@@ -1,5 +1,15 @@
 # Architektur und erster Entwicklungsabschnitt
 
+## Ergänzung: Katasterlöschung, Maßnahmen und Berichte v0.6
+
+Katasterknoten erhalten `DeletedAt` und einen globalen Queryfilter. Einzelne Löschungen laufen mit Versionsprüfung, Begründung und Audit in einer Transaktion. Kindknoten, historische Zählerzuordnungen, Fahrzeuge und aktive Berichtsvorlagen verhindern die Löschung. Dokumente werden dabei logisch gesperrt; der bestehende Bereinigungsdienst entfernt ihre Blobs.
+
+`MeasureImplemented` und `MeasureNotes` liegen am Verbraucher und nutzen dessen Versionsprüfung. Dokumente mit `Purpose=Measure` sind private PDF-Nachweise; bestehende Dokumente erhalten `Purpose=General`, damit sie nach dem Update sichtbar bleiben. Kopien übernehmen keine Umsetzung oder Maßnahmentexte.
+
+Die Bilanzübersicht berechnet eine Gesamtsumme aus erlaubten Standorten sowie eigenständige Gebäudebilanzen nach derselben bisherigen Rechenmethode. Gesamtansätze verhindern weiterhin Doppelzählung. Die Oberfläche zeigt alle Karten zusammen, voreingestellt als Ring.
+
+`ReportDefinition` speichert mandantenbezogene Filter und Inhalte für spätere PDF-/Excel-Auswertungen. Rolle, Hierarchie, Standortrechte, Datum und Version werden serverseitig geprüft. Die Berichtserstellung selbst gehört noch nicht zu dieser Version.
+
 ## Ergänzung: Komponenten, CSV/XLSM und Historienseiten v0.5
 
 `SavingsPercent` wird je Katastereintrag mit 0 vorbelegt. Der Sammel-Endpunkt prüft Rolle, Kunde, Standort, Version und Prozentbereich in einer Transaktion. Kopieren erzeugt neue IDs in einer Transaktion, validiert die Zielhierarchie und entfernt Messstellenverweise; Dateien bleiben am Original. Die fünfte Migration ergänzt ausschließlich die Prozent-Spalte.

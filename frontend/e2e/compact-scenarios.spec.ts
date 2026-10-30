@@ -80,8 +80,8 @@ for (const width of [1440, 390]) {
     await expect(history).toContainText('Seite 2 von 3'); await expect(rows).toHaveCount(15);
     await page.getByRole('button', { name: 'Nächste 15', exact: true }).click();
     await expect(history).toContainText('Seite 3 von 3'); await expect(rows).toHaveCount(2);
-    await page.getByLabel('Historie von (Browser-Ortszeit)').fill(await local(page, dates[10]));
-    await page.getByLabel('Historie bis (Browser-Ortszeit)').fill(await local(page, dates[13]));
+    await page.getByLabel('Historie von (Browser-Ortszeit)', { exact: true }).fill(await local(page, dates[10]));
+    await page.getByLabel('Historie bis (Browser-Ortszeit)', { exact: true }).fill(await local(page, dates[13]));
     await page.getByRole('button', { name: 'Historienzeitraum übernehmen' }).click();
     await expect(rows).toHaveCount(4); await expect(history).toContainText('Seite 1 von 1');
     await page.getByRole('button', { name: 'Gesamter Zeitraum', exact: true }).click(); await expect(rows).toHaveCount(15);
@@ -92,9 +92,9 @@ for (const width of [1440, 390]) {
     expect(await page.evaluate(v => new Date(v.to).getTime() - new Date(v.from).getTime(), values)).toBe(30 * 86400000);
     await expect(from).toHaveAttribute('name', 'balanceFrom'); await expect(to).toHaveAttribute('name', 'balanceTo');
     await page.getByRole('button', { name: 'Excel-Vorlage / Import', exact: true }).click();
-    await expect(page.getByLabel('Ausgefüllte Excel-/CSV-Dateien / ZIP auswählen')).toHaveAttribute('accept', '.xlsx,.xlsm,.csv,.zip');
+    await expect(page.getByLabel('Ausgefüllte Excel-/CSV-Dateien / ZIP auswählen', { exact: true })).toHaveAttribute('accept', '.xlsx,.xlsm,.csv,.zip');
     const at = new Date(now.getTime() - 5 * 86400000).toISOString().slice(0,19) + 'Z';
-    await page.getByLabel('Ausgefüllte Excel-/CSV-Dateien / ZIP auswählen').setInputFiles({ name: 'ablesung.csv', mimeType: 'text/csv', buffer: Buffer.from(`Datum;Zählerstand\r\n${at};100\r\n`) });
+    await page.getByLabel('Ausgefüllte Excel-/CSV-Dateien / ZIP auswählen', { exact: true }).setInputFiles({ name: 'ablesung.csv', mimeType: 'text/csv', buffer: Buffer.from(`Datum;Zählerstand\r\n${at};100\r\n`) });
     await page.getByRole('button', { name: 'Dateien prüfen', exact: true }).click();
     await expect(page.getByText('1 neue Werte · 0 identische Werte · 0 Fehler · 0 Grenzwertwarnungen')).toBeVisible();
     await page.getByRole('button', { name: 'Geprüfte Ablesungen importieren' }).click();

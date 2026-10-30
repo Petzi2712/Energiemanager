@@ -1,4 +1,4 @@
-# Kundenkataster und Zähleranlagenbaum – Version 0.5
+# Kundenkataster und Zähleranlagenbaum – Version 0.6
 
 ## Einen Kunden technisch aufnehmen
 
@@ -101,3 +101,15 @@ Ab Version 0.4 sind die theoretische Gebäude-/Standortbilanz und geschützte Ex
 Als Systemadministrator einen Untereintrag auswählen und „Eintrag kopieren“ öffnen. Ziel, neue ID und Bezeichnung bestimmen; wahlweise alle Untereinträge übernehmen. Die Kopie erhält neue interne Kennungen und eindeutige IDs für die Untereinträge. Technische Werte, Zusatzfelder, Aktivzustand und Einsparannahmen werden übernommen. Dokumente, Ablesungen und Messstellenzuordnungen verbleiben am Original. Kopien sind unabhängig bearbeitbar; die Aktion wird protokolliert. Standorte selbst werden nicht kopiert.
 
 Das Katasterfeld „Nummer“ heißt jetzt „ID“, die „Messstellennummer“ heißt „ID Messstelle“. Bestehende Werte und Verknüpfungen bleiben erhalten. Im Modul „Verbrauch und Unterzählerbilanz“ liegt der Beginn standardmäßig 30 Tage vor dem Ende; getrennte Feldnamen und ausgeschaltetes Autovervollständigen vermeiden Verwechslungen mit den Historienfiltern.
+
+## Löschen und Maßnahmen ab Version 0.6
+
+Als Systemadministrator „Katastereintrag löschen“ öffnen und einen nachvollziehbaren Grund angeben. Der einzelne Eintrag verschwindet aus Baum und Bilanz; sein Datenbankbezug bleibt als Löschmarkierung erhalten. Zugehörige allgemeine Dateien und Maßnahmen-PDFs werden gesperrt und anschließend aus dem Blob-Speicher bereinigt. Jeder Vorgang wird protokolliert. IDs bleiben reserviert.
+
+Untereinträge werden nicht automatisch mitgelöscht. Zuerst die Untereinträge entfernen. Vorhandene Zählerzuordnungen einschließlich Historien verhindern die Löschung; solche Einträge können bei Bedarf deaktiviert werden. Zugeordnete Fahrzeuge und Berichtsvorlagen müssen zuerst umgezogen, angepasst oder gelöscht werden. Es gibt keine Wiederherstellungsoberfläche.
+
+„Einsparszenario je Komponente“ besitzt die Checkbox „Maßnahme umgesetzt“ und eine Schaltfläche zum Aufklappen. Dort Umsetzung und Ergebnisse beschreiben, Status/Text speichern und private PDF-Berichte bis 6 MB hochladen oder löschen. Maximal 20 Maßnahmen-PDFs je Komponente. PDF-Nachweise sind vom allgemeinen Dokumentenbereich getrennt. Die Systemadministration bearbeitet diese Angaben; freigegebene Leser können sie ansehen. Bei einer Katasterkopie bleiben Umsetzung, Texte und Nachweise am Original; die neue Anlage startet ohne dokumentierte Umsetzung.
+
+Die Gesamtbilanz und alle aktiven freigegebenen Gebäude stehen gleichzeitig als Diagrammkarten bereit, auch beim Öffnen eines Verbrauchers. Der Ring ist die Voreinstellung. Die darunterstehenden Komponententabelle und Ausgangssumme beziehen sich auf den gewählten Standort bzw. das Gebäude des ausgewählten Eintrags. Die allgemeine Kundenübersicht umfasst nur freigegebene Standorte; Erzeugung und andere Medien bleiben getrennt.
+
+„Mein Konto“ sitzt als Zahnrad neben der Versionsangabe unten in der Seitenleiste. Die Hauptnavigation lautet Kundenkataster, Zähleranlagenbaum, Fuhrpark, Berichte. Eingabefelder zeigen Hinweise und Beispiele über Mouseover; die Fragezeichen an Formularfeldern sind auch per Tastatur fokussierbar.
