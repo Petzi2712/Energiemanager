@@ -1,40 +1,41 @@
-# Prüfbericht – Jahresverbrauch, Diagramme und neutraler KI-Prompt v0.7.0
+# Prüfbericht – Version 0.8.0
 
-Ausschließlich synthetische Testdaten. Vorheriger Stand: [Version 0.6](PRUEFBERICHT-v0.6.md).
+Prüfung vom 23.11.2026 mit ausschließlich synthetischen Daten. Vorheriger Stand: [Version 0.7](PRUEFBERICHT-v0.7.md). Bedienung und Berechnungsgrenzen: [Version 0.8](VERSION-0.8.md).
 
 | Prüfung | Ergebnis |
 | --- | --- |
-| Backend Release-Publish, .NET SDK 10.0.403 | Erfolgreich, keine Warnungen oder Fehler |
-| Frontend TypeScript-/Vite-Produktionsbuild | Erfolgreich, auch im Web-Dockerimage |
-| Gemeinsamer API-Lauf auf frischer Datenbank | **102 ausgeführt, 102 bestanden** |
-| Gemeinsamer Browserlauf | **15 ausgeführt, 15 bestanden**, Desktop und Smartphoneansicht |
-| Neue Browserabläufe | Beide erfolgreich, 1440 und 390 Pixel, Europe/Berlin |
-| Zwischenablage und ausgehende Anfragen | Kopierter Text entspricht der erzeugten Ausgabe; während Erstellung/Kopie keine externen Anfragen im Browser |
-| Diagrammbreite | Vollständiges SVG innerhalb der verfügbaren Breite; kein horizontaler Überlauf auf Desktop oder Smartphone |
-| Web-Containerimage 0.7.0 | Gebaut; HTML, CSP und endgültiges Produktionsskript per HTTP geprüft |
-| Update einer 0.6-Bestandskopie | Alte Inhalte und Zeilenzahlen in zwölf Tabellen per Prüfsumme unverändert; API 0.7.0 |
-| EF-Modell gegen Migration | Keine ausstehenden Modelländerungen, keine neue Schema-Migration |
-| NuGet inklusive transitiver Pakete / npm-Laufzeitpakete | Keine bekannten Sicherheitsmeldungen; gesperrter NuGet-Restore erfolgreich |
-| Compose-Konfiguration / Shellsyntax / Patch-Whitespace | Erfolgreich geprüft |
+| Gemeinsamer API-Lauf auf frischer PostgreSQL-Datenbank | **121 ausgeführt, 121 bestanden**, einschließlich 19 neuer 0.8-Fälle |
+| Gemeinsamer Browserlauf am endgültigen Web-Dockerimage | **17 ausgeführt, 17 bestanden**, Desktop 1440 und Smartphone 390 Pixel, Europe/Berlin |
+| .NET Debug-Build und Release-Publish, SDK 10.0.403 | Erfolgreich; keine Warnungen oder Fehler; Schrift und Lizenz im Publish enthalten |
+| TypeScript-/Vite-Produktionsbuild | Erfolgreich, auch im endgültigen Web-Dockerimage |
+| PDF unabhängig geöffnet | PDFsharp 6.2.4; A4, zwei Testseiten, eingebettete Schrift, Unicode, Diagramm, Seitenzahlen; Text mit `pdftotext` geprüft und Seite gerendert |
+| Excel unabhängig geöffnet | Mit openpyxl geöffnet; zwölf Tabellen, Vergleich 400/200 kWh, Zwischenintervalle, keine aus Benutzereingaben erzeugten Formeln |
+| Archivierung und Freigabe | Bytes und Datenstand bleiben nach Messwertkorrektur unverändert; neue Erstellung erhält neue Nummer und Daten; Freigabe kopiert dieselben Quelldaten in eine weitere Version |
+| Rechteprüfung | Kunden-/Standortgrenzen, entzogene Freigaben, fremde Vorlagen und Formate sowie Nur-Lese-Zugänge geprüft |
+| Bestandsmigration | Isolierte Kopie mit 0.7-Schema aktualisiert; alte Spalten und Zeilenzahlen in **19 Bestandstabellen** per Prüfsumme unverändert; neue historische Herkunft `Unknown` |
+| Echter Hintergrunddienst nach API-Neustart | Fälliger gespeicherter Termin automatisch geplant, eine SMTP-Annahme, eine persistente Folgeerinnerung, nächster Termin fortgeschrieben |
+| Unterbrochener Versand und zweiter Neustart | Abgelaufener `Sending`-Auftrag wird `Unclear`, kein neuer Versand; bestehende SMTP-Annahme erhalten; manuelle Klärung mit Audit erfolgreich |
+| Kontrollierter lokaler SMTP-Test | 450 → Retry, Retry, Failed bei drei Versuchen; 550 → Failed; Verbindungsabbruch → Unclear ohne automatische Wiederholung |
+| Web-Container per HTTP | HTML, CSP, endgültiges 0.8.0-Skript und Proxy zur nativen 0.8.0-API erfolgreich |
+| EF-Modell / Sperrdateien / Sicherheitsmeldungen | Keine ausstehenden Modelländerungen; gesperrter NuGet-Restore erfolgreich; keine bekannten Meldungen für NuGet inklusive transitiver Pakete und npm-Laufzeitpakete |
+| Compose / Shellsyntax / Patch-Whitespace | Erfolgreich geprüft |
 
-Die elf neuen API-Fälle prüfen echte Jahresmengen und den letzten Zählerstand, Gerätefaktoren, Haupt-/Unter-/Unterunterzähler ohne Doppelzählung, getrennte Medien und Messrichtungen, fehlende Jahresrandablesungen, bekannte Nullwerte, Gerätewechsel, historische Umhängungen, Gebäudebereiche, explizite Messstellenverweise und Mengen inzwischen gelöschter Messstellen. Sehr kleine von null verschiedene Verbrauchsmengen bleiben bis zur Promptausgabe erhalten.
+## Fachliche und technische Testfälle
 
-Der neutrale Prompt wird auf Veränderung durch neue Ablesungen, normierte Intervallmittel, Monatsqualität, Bereichsfilter, fehlende Daten, Zeitraumgrenzen und Kunden-/Standortrechte geprüft. Vertrauliche Testnamen, Adressen, Kontakte, Kennungen und Freitexte fehlen in der Ausgabe. Ein eingeschränkter Standortleser erhält auch nach einer Umhängung keine Intervallmengen aus dem gesperrten Standort. Unzulässige oder extrem zukünftige Datumswerte werden abgewiesen.
+Die neuen API-Fälle prüfen Faktoren und historische Haupt-/Unterzählerperioden, getrennte Medien und Einheiten, dokumentierte Bezugsgrößen, Vergleichsprozente, Monatsrandinterpolation, unbekannte Teilzeiträume, echte Nullwerte und Kalenderdauer bei Sommerzeitwechsel. Große zulässige Registerwerte mit Gerätefaktor dürfen keinen Zwischenüberlauf in der Intervallrechnung verursachen. Unzulässige Datumsbereiche, Medien, winzige oder fehlende Bezugsgrößenquellen werden abgewiesen.
 
-Die beiden neuen Browserabläufe verwenden einen eigenen Testkunden mit zwei Gebäuden, einem Haupt-/Unterzähler und einer unabhängigen Messstelle. Sie prüfen 150 kWh Zählerstand gegenüber 300 kWh tatsächlichem Jahresverbrauch bei Faktor 2 und die Gesamtsumme 340 kWh statt einer doppelten Summe mit Unterzähler. Standort-, Gebäude- und Gesamtauswahl, Abschnittsreihenfolge, zunächst geschlossene Konfiguration und das Schließen nach Übernahme werden geprüft. Das Diagramm bleibt vollständig innerhalb der Breite. Anschließend werden Prompt und Kopie erzeugt, private Testangaben ausgeschlossen und ein Gebäudefilter erneut angewendet.
+Datenqualität und Herkunft werden getrennt geprüft. Ohne konfigurierte Tagesgrenze entstehen keine neuen Verbrauchsspitzenwarnungen. Prüfvermerke gelten je Messwertversion; eine Korrektur über der Grenze öffnet die Prüfung erneut und kann wiederum bestätigt werden. Historische Werte einer stillgelegten Messstelle bleiben prüfbar. Fehlende Austauschstände erzeugen Lücken und Hinweise statt erfundener Differenzen.
 
-Die Regressionstests nutzen nun ausdrücklich die Strukturleiste und öffnen die einklappbare Konfiguration vor Änderungen. Die Medien-Vorauswahl der theoretischen Bilanz bevorzugt die Daten des geöffneten Bereichs; eine kundenweite Wasserbilanz verdeckt dadurch keine vorhandenen Stromwerte des ausgewählten Gebäudes. Wiederholte Jahreswerte werden am jeweiligen Anlagenbereich geprüft. Die Datums-Testhilfe verwendet die vom Browser normalisierte Schreibweise bei Sekundenwert 00.
+Die Berichtstests prüfen Dateisignaturen und numerische Excel-Zellen, Hash des JSON-Datenstands, unveränderte Dateien nach Korrektur, neue Versionen, parallele Erstellung mit Konfliktbehandlung, einmalige Freigabe, ausgewählte Ausgabeformate, Theorie, Maßnahmen, Logo, spätere Brandingänderungen und den Abruf nach Vorlagenlöschung. Ursprüngliche PDF-Nachweise werden als Verzeichnis aufgeführt, nicht eingebettet oder automatisch ausgewertet.
 
-Der Cloud-Lauf wurde während der Abschlussarbeit durch einen Umgebungsneustart unterbrochen. Die bereits abgeschlossenen 102 API-Ergebnisse und Dateien blieben erhalten. Die lokalen Testdienste wurden wieder gestartet und der gemeinsame Browserlauf anschließend vollständig ausgeführt. Es wurden keine fachlichen Prüfungen deaktiviert.
+Die Versandtests prüfen in Mailpit die tatsächliche Nachricht und den geschützten Portallink, Wiederholung der Planung ohne doppelte Aufträge, Folgefristen, entzogene Standortrechte, inzwischen eingegangene Ablesungen und den Audit-Eintrag. Neustart- und SMTP-Fehlerprüfungen wurden zusätzlich mit kontrollierten Zuständen auf einer isolierten Testdatenbank ausgeführt. Es wurde keine echte externe E-Mail versendet. Eine SMTP-Annahme ist keine Zustellbestätigung; unklare Versände benötigen eine dokumentierte Entscheidung.
 
-Für das Update wurden alle bisherigen Inhalte in Customers, Users, Nodes, Points, Readings, Assignments, Devices, Installations, Documents, Branding, Vehicles und ReportDefinitions verglichen. Die Ausgangsdatenbank blieb unverändert. Neue Berechnungen und Promptausgaben benötigen keine zusätzliche Tabelle.
+Der Gesamtlauf respektiert die unveränderte Login-Ratenbegrenzung. Die neuen Testclients warten bei deren HTTP-429-Antwort, statt den Schutz für den Test abzuschalten. API-Tests steuern die Versandwarteschlange mit deaktiviertem Hintergrunddienst deterministisch; dessen automatischer Betrieb wurde separat nachgewiesen.
 
-Ansichten: [Jahreskacheln](screenshots/jahreskacheln-v07.png) · [Verbrauch auf dem Smartphone](screenshots/verbrauch-ohne-scrollen-v07.png).
+Die beiden neuen Browserabläufe prüfen frei gewählte Vergleichszeiträume und Bezugsgrößen, 400/200 kWh mit Faktor, responsive Monatsbalken ohne Seitenüberlauf, Qualitätskacheln, echte PDF-/Excel-Downloads, archivierte Vorschau, Freigabeversionen und die Erinnerungskonfiguration inklusive Mailpit-Verarbeitung. Der mobile Versandtabellenüberlauf wurde behoben. Bestehende Importtests prüfen ihre Erfolgsmeldung jetzt innerhalb des Dialogs, damit gleichzeitige Hintergrund-Lademeldungen keinen mehrdeutigen Selektor erzeugen. Keine fachliche Prüfung wurde deaktiviert.
 
-## Prüfgrenzen
+## Grenzen des Cloud-Nachweises
 
-ASP.NET Core und Vite liefen nativ, PostgreSQL und Mailpit in Docker, der offizielle Azurite-Emulator lokal. Das Web-Dockerimage wurde neu gebaut und per HTTP geprüft. Der vollständige Backend-Docker-Stack wurde in dieser Cloud nicht erneut gebaut; der bereits dokumentierte MCR-Image-Download ist durch den Cloud-Netzwerkfilter eingeschränkt. `scripts/test.sh` verwendet über Compose alle 102 API-Fälle.
+Der vollständige Backend-Dockerbuild wurde versucht. Der Cloud-Netzfilter verweigert den Download der .NET-SDK-Image-Schichten von `westus.data.mcr.microsoft.com`. Daher ist der komplette Compose-Stack hier **nicht als erfolgreich gebaut bestätigt**. PostgreSQL und Mailpit laufen als echte Dockercontainer; API und Azurite wurden nativ betrieben. Das endgültige Web-Dockerimage wurde mit aktiviertem TLS und dem Cloud-Proxy-Zertifikat gebaut und per HTTP gegen die native API geprüft.
 
-Nicht geprüft sind der konkrete Benutzerrechner, physische Mobilgeräte, ARM, Produktivbetrieb oder Lasttests. Der erzeugte Prompt wird nicht automatisch an eine KI gesendet und führt keine KI-Analyse aus. Die Qualität einer späteren externen Auswertung wurde nicht bewertet. Neutrale Bezeichnungen lassen Namen und Kennungen weg; sie sind kein Nachweis einer vollständigen Anonymität von Verbrauchsmustern.
-
-Jahreskacheln zeigen tatsächlich erfasste vollständige Intervalle, gegebenenfalls als Teilwert bis zur letzten Ablesung. Die Verbrauchsdiagramme und die Monatsreihe im Prompt können bekannte Intervalle zeitanteilig verteilen; diese Werte bleiben gekennzeichnet und ersetzen keine gemessenen Lastgänge. Aus fehlenden Daten werden weder Nullverbrauch noch Einsparungen oder gesicherte Ursachen abgeleitet.
+Ein Cloud-Neustart unterbrach einen Zwischenlauf. Dateien, Dockerdaten und frühere Prüfergebnisse blieben erhalten. Die lokalen Prozesse wurden neu gestartet; der abschließende gemeinsame API-Lauf wurde auf einer weiteren frischen Datenbank vollständig wiederholt. Der lokale Rechner des Nutzers wurde dadurch nicht verändert. Die Software bleibt für lokalen Entwicklungsbetrieb freigegeben; öffentliche Produktivfreigabe und echtes SMTP sind ein späterer Meilenstein.

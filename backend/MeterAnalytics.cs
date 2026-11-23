@@ -18,6 +18,7 @@ public sealed class MeterAnalytics
     public required HashSet<Guid> Sites { get; init; }
     public required HashSet<Guid> ScopeNodes { get; init; }
     public required HashSet<Guid> Linked { get; init; }
+    public List<MeterReading> SourceReadings { get; } = [];
     public DateOnly? DateFrom { get; init; }
     public DateOnly? DateTo { get; init; }
     public bool InScope(MeterAssignment a) => Sites.Contains(a.SiteId) && (ScopeNodes.Contains(a.NodeId) || Linked.Contains(a.PointId));
@@ -115,6 +116,7 @@ public sealed class MeterAnalytics
         var latest=await db.Readings.AsNoTracking().Where(r=>ids.Contains(r.PointId)&&r.At<=now&&db.Assignments.Any(a=>a.PointId==r.PointId&&sites.Contains(a.SiteId)&&a.ValidFrom<=r.At&&(a.ValidTo==null||r.At<a.ValidTo))).GroupBy(r=>r.PointId).Select(g=>g.OrderByDescending(r=>r.At).ThenByDescending(r=>r.CreatedAt).First()).ToListAsync();
         foreach(var r in latest)data.Latest[r.PointId]=r;
         foreach(var point in points) {
+            data.SourceReadings.AddRange(readings.Where(r=>r.PointId==point.Id && assignments.Any(a=>a.PointId==point.Id && sites.Contains(a.SiteId) && a.ValidFrom<=r.At && (a.ValidTo==null||r.At<a.ValidTo))).DistinctBy(r=>r.Id));
             var allowed=assignments.Where(a=>a.PointId==point.Id&&sites.Contains(a.SiteId)).ToList();
             bool Visible(MeterReading r)=>allowed.Any(a=>a.ValidFrom<=r.At&&(a.ValidTo==null||r.At<a.ValidTo));
             data.Segments[point.Id]=installations.Where(i=>i.PointId==point.Id).SelectMany(i=>{

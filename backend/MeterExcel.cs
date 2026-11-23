@@ -286,6 +286,7 @@ public static class MeterExcelEndpoints
                 Require(warnings == 0 || form["confirmWarnings"] == "true" && reason.Trim().Length is >= 5 and <= 1000, "Konfigurierte Grenzwertüberschreitungen mit Begründung bestätigen.", 422);
                 foreach (var candidate in plan.Candidates) {
                     if (candidate.Row.Status == "Warnung") candidate.Reading.Reason = reason;
+                    candidate.Reading.Source = Path.GetExtension(candidate.Row.File).Equals(".csv", StringComparison.OrdinalIgnoreCase) ? "Csv" : "Excel";
                     db.Readings.Add(candidate.Reading);
                     Security.Audit(db, c, "Ablesung.ExcelImportiert", candidate.Reading.Id.ToString(), customerId, JsonSerializer.Serialize(new { candidate.Row.File, candidate.Row.Row, reading = candidate.Reading }));
                 }

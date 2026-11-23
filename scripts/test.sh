@@ -4,6 +4,8 @@ cd "$(dirname "$0")/.."
 # Frisches, eindeutig benanntes Compose-Projekt; vorhandene Anwendungsdaten bleiben erhalten.
 test_project="sysdatiq-test-$(date +%s)-$$"
 export APP_PORT="${TEST_APP_PORT:-18080}" MAIL_PORT="${TEST_MAIL_PORT:-18025}"
+# Automatischer Versand wird gesondert geprüft; API-Fälle steuern die Outbox deterministisch.
+export REMINDERS_WORKER_ENABLED=false
 export APP_BASE_URL="http://localhost:$APP_PORT"
 cleanup() { docker compose -p "$test_project" --profile test down -v --remove-orphans; }
 trap cleanup EXIT

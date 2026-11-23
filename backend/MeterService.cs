@@ -82,7 +82,7 @@ public static class MeterService
         return warnings.Count > 0 ? "Auffällig" : "Gültig";
     }
     public static MeterReading Reading(Guid pointId, Guid installationId, ReadingInput input, Guid userId, string status = "Gültig") => new()
-    { PointId = pointId, InstallationId = installationId, At = input.At.ToUniversalTime(), Value = input.Value, Comment = input.Comment, Event = input.Event, Reason = input.Reason, IsRollover = input.IsRollover, CreatedBy = userId, Status = status };
+    { Source = "Manual", PointId = pointId, InstallationId = installationId, At = input.At.ToUniversalTime(), Value = input.Value, Comment = input.Comment, Event = input.Event, Reason = input.Reason, IsRollover = input.IsRollover, CreatedBy = userId, Status = status };
 
     public static async Task<decimal?> Consumption(AppDbContext db, Guid pointId, DateTimeOffset from, DateTimeOffset to)
     {

@@ -105,6 +105,7 @@ public class MeterInstallation
 }
 public class MeterReading
 {
+    public string Source { get; set; } = "Unknown";
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid PointId { get; set; }
     public Guid InstallationId { get; set; }

@@ -78,7 +78,7 @@ public static class ConsumptionEndpoints
                 var left = s.From > a ? s.From : a; var right = s.To < b ? s.To : b;
                 if (right <= left) continue;
                 var ticks = (right - left).Ticks; covered += ticks;
-                sum += s.Value * ticks / (s.To - s.From).Ticks;
+                sum += s.Value * ((decimal)ticks / (s.To - s.From).Ticks);
                 estimated |= left != s.From || right != s.To;
             }
         }

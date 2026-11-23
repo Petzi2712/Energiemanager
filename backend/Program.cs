@@ -36,6 +36,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IPrivateFileStore, BlobFileStore>();
 builder.Services.AddHostedService<DocumentCleanup>();
+builder.Services.AddHostedService<ReminderWorker>();
 builder.Services.AddAntiforgery(o => { o.HeaderName = "X-CSRF-TOKEN"; o.Cookie.SameSite = SameSiteMode.Strict; });
 builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(builder.Configuration["App:DataKeyPath"] ?? "/app/keys")).SetApplicationName("sysDATIQ");
 builder.Services.AddOpenApi();
@@ -65,7 +66,7 @@ app.Use(async (c, next) =>
     catch (DbUpdateConcurrencyException) { await Error(c, 409, "Der Datensatz wurde zwischenzeitlich geändert. Bitte neu laden."); }
     catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
     { await Error(c, 409, "Diese Nummer, E-Mail-Adresse oder Ablesung ist bereits vorhanden."); }
-    catch (PostgresException ex) when (ex.SqlState == "40001")
+    catch (Exception ex) when (ex.GetBaseException() is PostgresException { SqlState: "40001" or "40P01" })
     { await Error(c, 409, "Parallele Änderung. Bitte neu laden und erneut versuchen."); }
     catch (Exception ex)
     {
@@ -107,7 +108,7 @@ var api = app.MapGroup("/api").AddEndpointFilter(async (context, next) =>
     }
     return await next(context);
 });
-api.MapGet("/health", async (AppDbContext db) => await db.Database.CanConnectAsync() ? Results.Ok(new { status = "ok", phase = 7, version = "0.7.0" }) : Results.StatusCode(503));
+api.MapGet("/health", async (AppDbContext db) => await db.Database.CanConnectAsync() ? Results.Ok(new { status = "ok", phase = 8, version = "0.8.0" }) : Results.StatusCode(503));
 api.MapGet("/auth/csrf", (HttpContext c, IAntiforgery a) => Results.Ok(new { token = a.GetAndStoreTokens(c).RequestToken }));
 AuthEndpoints.Map(api);
 CustomerEndpoints.Map(api);
@@ -118,6 +119,9 @@ DocumentEndpoints.Map(api);
 WorkspaceEndpoints.Map(api);
 KatasterActions.Map(api);
 ReportEndpoints.Map(api);
+AnalysisV08.Map(api);
+GeneratedReports.Map(api);
+Reminders.Map(api);
 ConsumptionEndpoints.Map(api);
 MeterAnalytics.Map(api);
 AnalysisPrompt.Map(api);

@@ -1,5 +1,13 @@
 # Architektur und erster Entwicklungsabschnitt
 
+## Ergänzung: Datenqualität, Vergleich, Archiv und Outbox v0.8
+
+`AnalysisV08` verwendet die berechtigten historischen Messintervalle aus `MeterAnalytics` für aktuelle und Referenzzeiträume. Monatsmengen nutzen die gemeinsame zeitanteilige Rechnung. Qualitätsprüfungen sind eigene, an Messwertversionen gebundene Datensätze; `MeterReading.Source` wird serverseitig beim Erfassen/Importieren gesetzt. Historische Werte erhalten `Unknown`. Rohquellen, Faktoren, Überlaufgrenzen, Intervalle und Hauptzählerperioden werden im Bericht eingefroren.
+
+`GeneratedReport` speichert JSON, Hash und fertige Dateien als unveränderliche Archivdatensätze in PostgreSQL. Fortlaufende Versionen je Vorlage entstehen in serialisierbaren Transaktionen. Freigabe kopiert den bestehenden Datenstand, rendert neue Freigabemetadaten und lässt den Entwurf bestehen. Aktuelle Standortrechte werden bei jedem Abruf gegen die archivierten Bereiche geprüft. PDFsharp **6.2.4 (MIT)** und eine mit Lizenz beigelegte DejaVu-Schrift liefern lokale plattformunabhängige PDFs; ClosedXML liefert die Excel-Dateien.
+
+`ReminderSetting` und `ReminderDispatch` enthalten Termine und dauerhafte Versandzustände. Unique-Index je Kunde/Zyklus/Stufe/Benutzer verhindert doppelte Planung. Optimistische Versionsprüfung sichert den Übergang in `Sending` vor SMTP. Nach abgelaufener Bearbeitungsfrist wird ein unterbrochener Versand `Unclear`; nur ausdrücklich temporäre SMTP-Ablehnungen werden automatisch wiederholt. Externe SMTP-Hosts sind in dieser lokalen Version für Erinnerungen gesperrt. Siehe [Bedienung und Zustellgrenzen](VERSION-0.8.md).
+
 ## Ergänzung: tatsächliche Jahresmengen und neutraler Analyseexport v0.7
 
 `MeterAnalytics` lädt freigegebene Messstellen, historische Zuordnungen, Geräteperioden und begrenzte Nachbarablesungen. Jahresmengen verwenden nur vollständig zuordenbare Messintervalle. Die Hierarchiesumme subtrahiert passende Hauptzählerperioden von Unterzählerperioden. Die gleiche Grundlage versorgt Jahreskacheln und Analyseexport. Es ist keine neue Schema-Migration erforderlich.

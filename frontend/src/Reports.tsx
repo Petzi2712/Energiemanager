@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, type Session } from "./api";
 import { Dialog, ErrorBox, Field } from "./ui";
+import { ReportArchive } from "./ReportArchive";
+import { ReminderSettings } from "./ReminderSettings";
 import { AnalysisPrompt } from "./AnalysisPrompt";
 import { DeleteDialog } from "./DeleteDialog";
 import { media, type Node, type Tree } from "./technical/types";
 
-type Definition = {
+export type Definition = {
   id: string;
   name: string;
   siteId: string | null;
@@ -66,10 +68,9 @@ export function Reports({
           )}
         </div>
         <p className="notice">
-          Hier legen Sie Umfang, Zeitraum und Inhalte künftiger Berichte fest.
-          Die Vorlagen werden gespeichert. Die ausführliche
-          PDF-Berichtserstellung und der Excel-Auswertungsexport folgen in einer
-          späteren Ausbaustufe.
+          Vorlagen bestimmen Zeitraum, Anlagenumfang und Inhalte. Darunter
+          erstellen und archivieren Sie unveränderliche PDF- und
+          Excel-Versionen.
         </p>
         <ErrorBox error={q.error || tree.error} />
         {q.isLoading && <p role="status">Vorlagen werden geladen …</p>}
@@ -101,7 +102,7 @@ export function Reports({
                   </dd>
                 </div>
                 <div>
-                  <dt>Geplante Ausgabe</dt>
+                  <dt>Ausgabe</dt>
                   <dd>
                     {[
                       item.pdf && "PDF-Bericht",
@@ -142,7 +143,17 @@ export function Reports({
           </p>
         )}
       </section>
-      <AnalysisPrompt customerId={customerId} nodes={nodes} templates={q.data || []}/>
+      <ReportArchive
+        customerId={customerId}
+        session={session}
+        definitions={q.data || []}
+      />
+      {admin && <ReminderSettings customerId={customerId} />}
+      <AnalysisPrompt
+        customerId={customerId}
+        nodes={nodes}
+        templates={q.data || []}
+      />
       {edit && (
         <ReportForm
           key={edit === "new" ? "new" : edit.id}
@@ -352,7 +363,7 @@ function ReportForm({
           </Field>
         </div>
         <fieldset>
-          <legend>Inhalte und geplante Ausgabe</legend>
+          <legend>Inhalte und Ausgabe</legend>
           {(
             [
               ["includeTheory", "Theoretische Jahresbilanz"],

@@ -1,4 +1,4 @@
-# Berichte – Version 0.7
+# Berichte – Version 0.8
 
 Unter „Berichte“ werden individuelle Vorlagen dauerhaft gespeichert. Den Kunden in der fixierten Kopfzeile wählen. Die Systemadministration kann Vorlagen anlegen, ändern und mit Begründung löschen; freigegebene Benutzer sehen passende Vorlagen.
 
@@ -6,7 +6,7 @@ Konfigurierbar sind Bezeichnung, gesamter Kunde oder Standort, optional Gebäude
 
 Standortbeschränkte Benutzer sehen nur Vorlagen ihrer erlaubten Standorte. Kundenweite Vorlagen werden ihnen nur bei vollständiger Freigabe aller aktiven Standorte angezeigt. Kunden verschiedener Mandanten bleiben getrennt.
 
-Diese Version speichert die Berichtskonfiguration. Die ausführliche PDF-Berichtserstellung, Excel-Auswertungsberichte und automatisierte Analyse hochgeladener PDFs folgen in einer späteren Ausbaustufe. Die bereits vorhandenen Excel-Ablesevorlagen bleiben im Zähleranlagenbaum nutzbar. Der Status in der Oberfläche benennt diesen Umfang ausdrücklich.
+Version 0.8 erzeugt echte PDF- und Excel-Berichte aus eingefrorenen Datenständen, mit Versionsarchiv und dokumentierter Freigabe. Außerdem stehen Verbrauchsvergleiche, Datenqualität und lokale automatische Ableseerinnerungen zur Verfügung. [Vollständige Bedienung und Grenzen](VERSION-0.8.md). Original-PDF-Nachweise erscheinen als Verzeichnis und werden nicht automatisch analysiert.
 
 ## Neutraler KI-Analyseprompt
 

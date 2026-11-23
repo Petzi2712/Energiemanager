@@ -73,7 +73,7 @@ for (const width of [1440, 390]) {
     await page.getByRole('button', { name: 'Dateien prüfen', exact: true }).click();
     await expect(page.getByText('2 neue Werte · 0 identische Werte · 0 Fehler · 0 Grenzwertwarnungen')).toBeVisible();
     await page.getByRole('button', { name: 'Geprüfte Ablesungen importieren', exact: true }).click();
-    await expect(page.getByRole('status')).toContainText('2 Ablesungen gespeichert');
+    await expect(page.getByRole('dialog').getByRole('status')).toContainText('2 Ablesungen gespeichert');
     await page.getByRole('button', { name: 'Dialog schließen' }).click();
     await expect(page.getByRole('cell', { name: '150 kWh', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Excel-Massendownload / Import', exact: true }).click();
@@ -88,7 +88,7 @@ for (const width of [1440, 390]) {
     await expect(page.getByRole('heading', { name: 'Importvorschau', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Geprüfte Ablesungen importieren' })).toBeEnabled();
     await page.getByRole('button', { name: 'Geprüfte Ablesungen importieren' }).click();
-    await expect(page.getByRole('status')).toContainText('4 Ablesungen gespeichert');
+    await expect(page.getByRole('dialog').getByRole('status')).toContainText('4 Ablesungen gespeichert');
     await page.getByRole('button', { name: 'Dialog schließen' }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
     expect(errors).toEqual([]);

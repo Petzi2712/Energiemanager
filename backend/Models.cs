@@ -97,6 +97,7 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options) : DbCo
         ConfigureTechnical(b);
         ConfigureWorkspace(b);
         ConfigureReports(b);
+        ConfigureV08(b);
         b.Entity<AppUser>().HasIndex(x => x.NormalizedEmail).IsUnique();
         b.Entity<AppUser>().Property(x => x.Email).HasMaxLength(254);
         b.Entity<AppUser>().Property(x => x.NormalizedEmail).HasMaxLength(254);

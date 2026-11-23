@@ -1,8 +1,12 @@
-# sysDATIQ – Anlagen, Zähler und Fuhrpark (v0.7.0)
+# sysDATIQ – Anlagen, Zähler und Fuhrpark (v0.8.0)
 
 Die technische Kunden- und Zählerverwaltung aus deinem Masterprompt: eine echte Webanwendung mit React, ASP.NET Core 10 und PostgreSQL. Daten werden dauerhaft gespeichert. Der vollständige Masterprompt liegt in [docs/MASTERPROMPT.original.md](docs/MASTERPROMPT.original.md).
 
 Ansichten der geprüften Anwendung: [Version 0.3 Desktop mit Darkmodus und Verbrauchsdiagramm](docs/screenshots/verbrauch-dark-desktop.png) · [Smartphone](docs/screenshots/verbrauch-dark-smartphone.png).
+
+## Neu in Version 0.8
+
+Datenqualität und frei wählbare Verbrauchsvergleiche unter „Auswertungen“, dokumentierte Kennzahlen, echte versionierte PDF-/Excel-Berichte mit eingefrorenem Datenstand sowie dauerhafte Ableseerinnerungen über das lokale Mailpit. [Bedienung, Berechnungsregeln und Update](docs/VERSION-0.8.md) · [Prüfbericht](docs/PRUEFBERICHT.md).
 
 ## Lokal starten
 

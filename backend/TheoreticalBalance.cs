@@ -48,7 +48,7 @@ public static class TheoreticalBalance
     public record Total(string Medium, string Unit, string Role, decimal Value);
     public record Balance(Guid Id, string Name, List<Entry> Entries, List<Total> Totals, List<object> Missing, int Covered, string Method);
     static List<Total> Sum(List<Entry> entries) => entries.GroupBy(x => new { x.Medium, x.Unit, x.Role }).Select(g => new Total(g.Key.Medium, g.Key.Unit, g.Key.Role, g.Sum(x => x.Value))).ToList();
-    static Balance Calculate(TechnicalNode root, List<TechnicalNode> nodes)
+    public static Balance Calculate(TechnicalNode root, List<TechnicalNode> nodes)
     {
             var entries = new List<Entry>(); var missing = new List<object>(); var covered = 0;
             bool Active(TechnicalNode n) => n.IsActive && (n.ParentId == null || Active(nodes.Single(x => x.Id == n.ParentId)));

@@ -98,7 +98,7 @@ for (const width of [1440, 390]) {
     await page.getByRole('button', { name: 'Dateien prüfen', exact: true }).click();
     await expect(page.getByText('1 neue Werte · 0 identische Werte · 0 Fehler · 0 Grenzwertwarnungen')).toBeVisible();
     await page.getByRole('button', { name: 'Geprüfte Ablesungen importieren' }).click();
-    await expect(page.getByRole('status')).toContainText('1 Ablesungen gespeichert');
+    await expect(page.getByRole('dialog').getByRole('status')).toContainText('1 Ablesungen gespeichert');
     await page.getByRole('button', { name: 'Dialog schließen' }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy(); expect(errors).toEqual([]);
   });
